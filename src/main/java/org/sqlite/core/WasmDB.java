@@ -57,6 +57,8 @@ public class WasmDB extends DB {
     private static final int SQLITE_ROW = 100; /* sqlite3_step() has another row ready */
     private static final int SQLITE_DONE = 101; /* sqlite3_step() has finished executing */
 
+    private static final int SQLITE_TRANSIENT = -1; // ???
+
     private final Instance instance;
     private final WasiPreview1 wasiPreview1;
     private final WasmDB_ModuleExports exports;
@@ -138,6 +140,21 @@ public class WasmDB extends DB {
     }
 
     @Override
+    public int _exec(String sql) throws SQLException {
+        String sqlBytes = new String(sql.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        int sqlBytesPtr = malloc(sqlBytes.length());
+        instance.memory().writeCString(sqlBytesPtr, sqlBytes);
+
+        int status = exports.sqlite3Exec(pointer, sqlBytesPtr, 0, 0, 0);
+        free(sqlBytesPtr);
+        if (status != SQLITE_OK) {
+            throw new SQLException("Failed to exec " + sql);
+        }
+
+        return status;
+    }
+
+    @Override
     public long changes() throws SQLException {
         return exports.sqlite3Changes64(pointer);
     }
@@ -191,11 +208,6 @@ public class WasmDB extends DB {
     }
 
     @Override
-    public int _exec(String sql) throws SQLException {
-        throw new RuntimeException("_exec not implemented in WasmDB");
-    }
-
-    @Override
     public int reset(long stmt) throws SQLException {
         int stmtPtrPtr = instance.memory().readInt((int) stmt);
         return exports.sqlite3Reset(stmtPtrPtr);
@@ -203,7 +215,8 @@ public class WasmDB extends DB {
 
     @Override
     public int clear_bindings(long stmt) throws SQLException {
-        throw new RuntimeException("clear_bindings not implemented in WasmDB");
+        int stmtPtrPtr = instance.memory().readInt((int) stmt);
+        return exports.sqlite3ClearBindings(stmtPtrPtr);
     }
 
     @Override
@@ -282,7 +295,8 @@ public class WasmDB extends DB {
 
     @Override
     int bind_int(long stmt, int pos, int v) throws SQLException {
-        throw new RuntimeException("bind_int not implemented in WasmDB");
+        int stmtPtrPtr = instance.memory().readInt((int) stmt);
+        return exports.sqlite3BindInt(stmtPtrPtr, pos, v);
     }
 
     @Override
@@ -298,7 +312,15 @@ public class WasmDB extends DB {
 
     @Override
     int bind_text(long stmt, int pos, String v) throws SQLException {
-        throw new RuntimeException("bind_text not implemented in WasmDB");
+        int stmtPtrPtr = instance.memory().readInt((int) stmt);
+        // TODO: doublecheck allocation of Strings: should it be +1 byte for the terminal 0?
+        int vPtr = malloc(v.length());
+        instance.memory().writeCString(vPtr, new String(v.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
+
+        int result = exports.sqlite3BindText(stmtPtrPtr, pos, vPtr, v.length(), SQLITE_TRANSIENT);
+        free(vPtr);
+
+        return result;
     }
 
     @Override
