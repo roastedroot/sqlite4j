@@ -1,0 +1,6 @@
+wasi-sdk
+binaryen
+sqlite-amalgamation
+*.zip
+*.tar.gz
+*.wasm

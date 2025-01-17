@@ -19,7 +19,7 @@ import java.util.concurrent.Executor;
 import org.sqlite.SQLiteConfig.TransactionMode;
 import org.sqlite.core.CoreDatabaseMetaData;
 import org.sqlite.core.DB;
-import org.sqlite.core.NativeDB;
+import org.sqlite.core.WasmDB;
 import org.sqlite.jdbc4.JDBC4DatabaseMetaData;
 
 /** */
@@ -277,8 +277,10 @@ public abstract class SQLiteConnection implements Connection {
         // load the native DB
         DB db = null;
         try {
-            NativeDB.load();
-            db = new NativeDB(url, fileName, config);
+            // TODO: find a nice way to make this configurable
+            // NativeDB.load();
+            // db = new NativeDB(url, fileName, config);
+            db = new WasmDB(url, fileName, config);
         } catch (Exception e) {
             SQLException err = new SQLException("Error opening connection");
             err.initCause(e);
