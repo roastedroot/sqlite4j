@@ -315,7 +315,10 @@ public class WasmDB extends DB {
         int stmtPtrPtr = instance.memory().readInt((int) stmt);
         // TODO: doublecheck allocation of Strings: should it be +1 byte for the terminal 0?
         int vPtr = malloc(v.length());
-        instance.memory().writeCString(vPtr, new String(v.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
+        instance.memory()
+                .writeCString(
+                        vPtr,
+                        new String(v.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
 
         int result = exports.sqlite3BindText(stmtPtrPtr, pos, vPtr, v.length(), SQLITE_TRANSIENT);
         free(vPtr);

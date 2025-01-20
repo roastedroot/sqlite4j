@@ -373,19 +373,25 @@ public class SQLiteJDBCLoader {
         String archName = OSInfo.getArchName();
     }
 
-    /** @return The major version of the SQLite JDBC driver. */
+    /**
+     * @return The major version of the SQLite JDBC driver.
+     */
     public static int getMajorVersion() {
         String[] c = getVersion().split("\\.");
         return (c.length > 0) ? Integer.parseInt(c[0]) : 1;
     }
 
-    /** @return The minor version of the SQLite JDBC driver. */
+    /**
+     * @return The minor version of the SQLite JDBC driver.
+     */
     public static int getMinorVersion() {
         String[] c = getVersion().split("\\.");
         return (c.length > 1) ? Integer.parseInt(c[1]) : 0;
     }
 
-    /** @return The version of the SQLite JDBC driver. */
+    /**
+     * @return The version of the SQLite JDBC driver.
+     */
     public static String getVersion() {
         return VersionHolder.VERSION;
     }

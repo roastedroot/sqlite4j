@@ -36,13 +36,16 @@ public class ExtensionTest {
     public void extFTS3() throws Exception {
         stat.execute("create virtual table recipe using fts3(name, ingredients)");
         stat.execute(
-                "insert into recipe (name, ingredients) values('broccoli stew', 'broccoli peppers cheese tomatoes')");
+                "insert into recipe (name, ingredients) values('broccoli stew', 'broccoli peppers"
+                        + " cheese tomatoes')");
         stat.execute(
-                "insert into recipe (name, ingredients) values('pumpkin stew', 'pumpkin onions garlic celery')");
+                "insert into recipe (name, ingredients) values('pumpkin stew', 'pumpkin onions"
+                        + " garlic celery')");
 
         ResultSet rs =
                 stat.executeQuery(
-                        "select rowid, name, ingredients from recipe where ingredients match 'onions'");
+                        "select rowid, name, ingredients from recipe where ingredients match"
+                                + " 'onions'");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(2)).isEqualTo("pumpkin stew");
     }
@@ -51,9 +54,11 @@ public class ExtensionTest {
     public void extFTS5() throws Exception {
         stat.execute("create virtual table recipe using fts5(name, ingredients)");
         stat.execute(
-                "insert into recipe (name, ingredients) values('broccoli stew', 'broccoli peppers cheese tomatoes')");
+                "insert into recipe (name, ingredients) values('broccoli stew', 'broccoli peppers"
+                        + " cheese tomatoes')");
         stat.execute(
-                "insert into recipe (name, ingredients) values('pumpkin stew', 'pumpkin onions garlic celery')");
+                "insert into recipe (name, ingredients) values('pumpkin stew', 'pumpkin onions"
+                        + " garlic celery')");
 
         ResultSet rs =
                 stat.executeQuery(

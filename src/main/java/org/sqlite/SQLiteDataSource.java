@@ -69,7 +69,9 @@ public class SQLiteDataSource implements DataSource {
         this.config = config;
     }
 
-    /** @return The configuration for the data source. */
+    /**
+     * @return The configuration for the data source.
+     */
     public SQLiteConfig getConfig() {
         return config;
     }
@@ -83,7 +85,9 @@ public class SQLiteDataSource implements DataSource {
         this.url = url;
     }
 
-    /** @return The location of the database file. */
+    /**
+     * @return The location of the database file.
+     */
     public String getUrl() {
         return url;
     }
@@ -460,12 +464,16 @@ public class SQLiteDataSource implements DataSource {
 
     // codes for the DataSource interface
 
-    /** @see javax.sql.DataSource#getConnection() */
+    /**
+     * @see javax.sql.DataSource#getConnection()
+     */
     public Connection getConnection() throws SQLException {
         return getConnection(null, null);
     }
 
-    /** @see javax.sql.DataSource#getConnection(java.lang.String, java.lang.String) */
+    /**
+     * @see javax.sql.DataSource#getConnection(java.lang.String, java.lang.String)
+     */
     public SQLiteConnection getConnection(String username, String password) throws SQLException {
         Properties p = config.toProperties();
         if (username != null) p.put("user", username);
@@ -473,12 +481,16 @@ public class SQLiteDataSource implements DataSource {
         return JDBC.createConnection(url, p);
     }
 
-    /** @see javax.sql.DataSource#getLogWriter() */
+    /**
+     * @see javax.sql.DataSource#getLogWriter()
+     */
     public PrintWriter getLogWriter() throws SQLException {
         return logger;
     }
 
-    /** @see javax.sql.DataSource#getLoginTimeout() */
+    /**
+     * @see javax.sql.DataSource#getLoginTimeout()
+     */
     public int getLoginTimeout() throws SQLException {
         return loginTimeout;
     }
@@ -487,12 +499,16 @@ public class SQLiteDataSource implements DataSource {
         throw new SQLFeatureNotSupportedException("getParentLogger");
     }
 
-    /** @see javax.sql.DataSource#setLogWriter(java.io.PrintWriter) */
+    /**
+     * @see javax.sql.DataSource#setLogWriter(java.io.PrintWriter)
+     */
     public void setLogWriter(PrintWriter out) throws SQLException {
         this.logger = out;
     }
 
-    /** @see javax.sql.DataSource#setLoginTimeout(int) */
+    /**
+     * @see javax.sql.DataSource#setLoginTimeout(int)
+     */
     public void setLoginTimeout(int seconds) throws SQLException {
         loginTimeout = seconds;
     }

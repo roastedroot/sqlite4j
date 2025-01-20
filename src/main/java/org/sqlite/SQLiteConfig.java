@@ -295,7 +295,9 @@ public class SQLiteConfig {
         return getBoolean(Pragma.LOAD_EXTENSION, "false");
     }
 
-    /** @return The open mode flags. */
+    /**
+     * @return The open mode flags.
+     */
     public int getOpenModeFlags() {
         return openModeFlag;
     }
@@ -337,7 +339,9 @@ public class SQLiteConfig {
         return pragmaTable;
     }
 
-    /** @return Array of DriverPropertyInfo objects. */
+    /**
+     * @return Array of DriverPropertyInfo objects.
+     */
     static DriverPropertyInfo[] getDriverPropertyInfo() {
         Pragma[] pragma = Pragma.values();
         DriverPropertyInfo[] result = new DriverPropertyInfo[pragma.length];
@@ -365,7 +369,9 @@ public class SQLiteConfig {
         }
     }
 
-    /** @return true if explicit read only transactions are enabled */
+    /**
+     * @return true if explicit read only transactions are enabled
+     */
     public boolean isExplicitReadOnly() {
         return this.explicitReadOnly;
     }
@@ -395,45 +401,64 @@ public class SQLiteConfig {
         // Pragmas that can be set after opening the database
         CACHE_SIZE(
                 "cache_size",
-                "Maximum number of database disk pages that SQLite will hold in memory at once per open database file",
+                "Maximum number of database disk pages that SQLite will hold in memory at once per"
+                        + " open database file",
                 null),
         MMAP_SIZE(
                 "mmap_size",
-                "Maximum number of bytes that are set aside for memory-mapped I/O on a single database",
+                "Maximum number of bytes that are set aside for memory-mapped I/O on a single"
+                        + " database",
                 null),
         CASE_SENSITIVE_LIKE(
                 "case_sensitive_like",
-                "Installs a new application-defined LIKE function that is either case sensitive or insensitive depending on the value",
+                "Installs a new application-defined LIKE function that is either case sensitive or"
+                        + " insensitive depending on the value",
                 OnOff.Values),
         COUNT_CHANGES("count_changes", "Deprecated", OnOff.Values),
         DEFAULT_CACHE_SIZE("default_cache_size", "Deprecated", null),
         DEFER_FOREIGN_KEYS(
                 "defer_foreign_keys",
-                "When the defer_foreign_keys PRAGMA is on, enforcement of all foreign key constraints is delayed until the outermost transaction is committed. The defer_foreign_keys pragma defaults to OFF so that foreign key constraints are only deferred if they are created as \"DEFERRABLE INITIALLY DEFERRED\". The defer_foreign_keys pragma is automatically switched off at each COMMIT or ROLLBACK. Hence, the defer_foreign_keys pragma must be separately enabled for each transaction. This pragma is only meaningful if foreign key constraints are enabled, of course.",
+                "When the defer_foreign_keys PRAGMA is on, enforcement of all foreign key"
+                    + " constraints is delayed until the outermost transaction is committed. The"
+                    + " defer_foreign_keys pragma defaults to OFF so that foreign key constraints"
+                    + " are only deferred if they are created as \"DEFERRABLE INITIALLY DEFERRED\"."
+                    + " The defer_foreign_keys pragma is automatically switched off at each COMMIT"
+                    + " or ROLLBACK. Hence, the defer_foreign_keys pragma must be separately"
+                    + " enabled for each transaction. This pragma is only meaningful if foreign key"
+                    + " constraints are enabled, of course.",
                 OnOff.Values),
         EMPTY_RESULT_CALLBACKS("empty_result_callback", "Deprecated", OnOff.Values),
         ENCODING(
                 "encoding",
-                "Set the encoding that the main database will be created with if it is created by this session",
+                "Set the encoding that the main database will be created with if it is created by"
+                        + " this session",
                 toStringArray(Encoding.values())),
         FOREIGN_KEYS(
                 "foreign_keys", "Set the enforcement of foreign key constraints", OnOff.Values),
         FULL_COLUMN_NAMES("full_column_names", "Deprecated", OnOff.Values),
         FULL_SYNC(
                 "fullsync",
-                "Whether or not the F_FULLFSYNC syncing method is used on systems that support it. Only Mac OS X supports F_FULLFSYNC.",
+                "Whether or not the F_FULLFSYNC syncing method is used on systems that support it."
+                        + " Only Mac OS X supports F_FULLFSYNC.",
                 OnOff.Values),
         INCREMENTAL_VACUUM(
                 "incremental_vacuum",
-                "Causes up to N pages to be removed from the freelist. The database file is truncated by the same amount. The incremental_vacuum pragma has no effect if the database is not in auto_vacuum=incremental mode or if there are no pages on the freelist. If there are fewer than N pages on the freelist, or if N is less than 1, or if the \"(N)\" argument is omitted, then the entire freelist is cleared.",
+                "Causes up to N pages to be removed from the freelist. The database file is"
+                    + " truncated by the same amount. The incremental_vacuum pragma has no effect"
+                    + " if the database is not in auto_vacuum=incremental mode or if there are no"
+                    + " pages on the freelist. If there are fewer than N pages on the freelist, or"
+                    + " if N is less than 1, or if the \"(N)\" argument is omitted, then the entire"
+                    + " freelist is cleared.",
                 null),
         JOURNAL_MODE(
                 "journal_mode",
-                "Set the journal mode for databases associated with the current database connection",
+                "Set the journal mode for databases associated with the current database"
+                        + " connection",
                 toStringArray(JournalMode.values())),
         JOURNAL_SIZE_LIMIT(
                 "journal_size_limit",
-                "Limit the size of rollback-journal and WAL files left in the file-system after transactions or checkpoints",
+                "Limit the size of rollback-journal and WAL files left in the file-system after"
+                        + " transactions or checkpoints",
                 null),
         LEGACY_ALTER_TABLE("legacy_alter_table", "Use legacy alter table behavior", OnOff.Values),
         LEGACY_FILE_FORMAT("legacy_file_format", "No-op", OnOff.Values),
@@ -443,7 +468,8 @@ public class SQLiteConfig {
                 toStringArray(LockingMode.values())),
         PAGE_SIZE(
                 "page_size",
-                "Set the page size of the database. The page size must be a power of two between 512 and 65536 inclusive.",
+                "Set the page size of the database. The page size must be a power of two between"
+                        + " 512 and 65536 inclusive.",
                 null),
         MAX_PAGE_COUNT(
                 "max_page_count", "Set the maximum number of pages in the database file", null),
@@ -452,7 +478,8 @@ public class SQLiteConfig {
                 "recursive_triggers", "Set the recursive trigger capability", OnOff.Values),
         REVERSE_UNORDERED_SELECTS(
                 "reverse_unordered_selects",
-                "When enabled, this PRAGMA causes many SELECT statements without an ORDER BY clause to emit their results in the reverse order from what they normally would",
+                "When enabled, this PRAGMA causes many SELECT statements without an ORDER BY clause"
+                    + " to emit their results in the reverse order from what they normally would",
                 OnOff.Values),
         SECURE_DELETE(
                 "secure_delete",
@@ -465,16 +492,30 @@ public class SQLiteConfig {
                 toStringArray(SynchronousMode.values())),
         TEMP_STORE(
                 "temp_store",
-                "When temp_store is DEFAULT (0), the compile-time C preprocessor macro SQLITE_TEMP_STORE is used to determine where temporary tables and indices are stored. When temp_store is MEMORY (2) temporary tables and indices are kept as if they were in pure in-memory databases. When temp_store is FILE (1) temporary tables and indices are stored in a file. The temp_store_directory pragma can be used to specify the directory containing temporary files when FILE is specified. When the temp_store setting is changed, all existing temporary tables, indices, triggers, and views are immediately deleted.",
+                "When temp_store is DEFAULT (0), the compile-time C preprocessor macro"
+                    + " SQLITE_TEMP_STORE is used to determine where temporary tables and indices"
+                    + " are stored. When temp_store is MEMORY (2) temporary tables and indices are"
+                    + " kept as if they were in pure in-memory databases. When temp_store is FILE"
+                    + " (1) temporary tables and indices are stored in a file. The"
+                    + " temp_store_directory pragma can be used to specify the directory containing"
+                    + " temporary files when FILE is specified. When the temp_store setting is"
+                    + " changed, all existing temporary tables, indices, triggers, and views are"
+                    + " immediately deleted.",
                 toStringArray(TempStore.values())),
         TEMP_STORE_DIRECTORY("temp_store_directory", "Deprecated", null),
         USER_VERSION(
                 "user_version",
-                "Set the value of the user-version integer at offset 60 in the database header. The user-version is an integer that is available to applications to use however they want. SQLite makes no use of the user-version itself.",
+                "Set the value of the user-version integer at offset 60 in the database header. The"
+                    + " user-version is an integer that is available to applications to use however"
+                    + " they want. SQLite makes no use of the user-version itself.",
                 null),
         APPLICATION_ID(
                 "application_id",
-                "Set the 32-bit signed big-endian \"Application ID\" integer located at offset 68 into the database header. Applications that use SQLite as their application file-format should set the Application ID integer to a unique integer so that utilities such as file(1) can determine the specific file type rather than just reporting \"SQLite3 Database\"",
+                "Set the 32-bit signed big-endian \"Application ID\" integer located at offset 68"
+                    + " into the database header. Applications that use SQLite as their application"
+                    + " file-format should set the Application ID integer to a unique integer so"
+                    + " that utilities such as file(1) can determine the specific file type rather"
+                    + " than just reporting \"SQLite3 Database\"",
                 null),
 
         // Limits
@@ -486,7 +527,9 @@ public class SQLiteConfig {
                 "limit_sql_length", "The maximum length of an SQL statement, in bytes.", null),
         LIMIT_COLUMN(
                 "limit_column",
-                "The maximum number of columns in a table definition or in the result set of a SELECT or the maximum number of columns in an index or in an ORDER BY or GROUP BY clause.",
+                "The maximum number of columns in a table definition or in the result set of a"
+                    + " SELECT or the maximum number of columns in an index or in an ORDER BY or"
+                    + " GROUP BY clause.",
                 null),
         LIMIT_EXPR_DEPTH(
                 "limit_expr_depth", "The maximum depth of the parse tree on any expression.", null),
@@ -496,7 +539,10 @@ public class SQLiteConfig {
                 null),
         LIMIT_VDBE_OP(
                 "limit_vdbe_op",
-                "The maximum number of instructions in a virtual machine program used to implement an SQL statement. If sqlite3_prepare_v2() or the equivalent tries to allocate space for more than this many opcodes in a single prepared statement, an SQLITE_NOMEM error is returned.",
+                "The maximum number of instructions in a virtual machine program used to implement"
+                        + " an SQL statement. If sqlite3_prepare_v2() or the equivalent tries to"
+                        + " allocate space for more than this many opcodes in a single prepared"
+                        + " statement, an SQLITE_NOMEM error is returned.",
                 null),
         LIMIT_FUNCTION_ARG(
                 "limit_function_arg", "The maximum number of arguments on a function.", null),
@@ -513,7 +559,8 @@ public class SQLiteConfig {
                 "limit_trigger_depth", "The maximum depth of recursion for triggers.", null),
         LIMIT_WORKER_THREADS(
                 "limit_worker_threads",
-                "The maximum number of auxiliary worker threads that a single prepared statement may start.",
+                "The maximum number of auxiliary worker threads that a single prepared statement"
+                        + " may start.",
                 null),
         LIMIT_PAGE_COUNT(
                 "limit_page_count",
@@ -527,19 +574,27 @@ public class SQLiteConfig {
                 toStringArray(TransactionMode.values())),
         DATE_PRECISION(
                 "date_precision",
-                "\"seconds\": Read and store integer dates as seconds from the Unix Epoch (SQLite standard).\n\"milliseconds\": (DEFAULT) Read and store integer dates as milliseconds from the Unix Epoch (Java standard).",
+                "\"seconds\": Read and store integer dates as seconds from the Unix Epoch (SQLite"
+                        + " standard).\n"
+                        + "\"milliseconds\": (DEFAULT) Read and store integer dates as milliseconds"
+                        + " from the Unix Epoch (Java standard).",
                 toStringArray(DatePrecision.values())),
         DATE_CLASS(
                 "date_class",
-                "\"integer\": (Default) store dates as number of seconds or milliseconds from the Unix Epoch\n\"text\": store dates as a string of text\n\"real\": store dates as Julian Dates",
+                "\"integer\": (Default) store dates as number of seconds or milliseconds from the"
+                        + " Unix Epoch\n"
+                        + "\"text\": store dates as a string of text\n"
+                        + "\"real\": store dates as Julian Dates",
                 toStringArray(DateClass.values())),
         DATE_STRING_FORMAT(
                 "date_string_format",
-                "Format to store and retrieve dates stored as text. Defaults to \"yyyy-MM-dd HH:mm:ss.SSS\"",
+                "Format to store and retrieve dates stored as text. Defaults to \"yyyy-MM-dd"
+                        + " HH:mm:ss.SSS\"",
                 null),
         BUSY_TIMEOUT(
                 "busy_timeout",
-                "Sets a busy handler that sleeps for a specified amount of time when a table is locked",
+                "Sets a busy handler that sleeps for a specified amount of time when a table is"
+                        + " locked",
                 null),
         HEXKEY_MODE("hexkey_mode", "Mode of the secret key", toStringArray(HexKeyMode.values())),
         PASSWORD("password", "Database password", null),
@@ -1132,7 +1187,9 @@ public class SQLiteConfig {
         setTransactionMode(TransactionMode.getMode(transactionMode));
     }
 
-    /** @return The transaction mode. */
+    /**
+     * @return The transaction mode.
+     */
     public TransactionMode getTransactionMode() {
         return this.defaultConnectionConfig.getTransactionMode();
     }
@@ -1150,7 +1207,9 @@ public class SQLiteConfig {
         }
     }
 
-    /** @param datePrecision One of SECONDS or MILLISECONDS */
+    /**
+     * @param datePrecision One of SECONDS or MILLISECONDS
+     */
     public void setDatePrecision(String datePrecision) {
         this.defaultConnectionConfig.setDatePrecision(DatePrecision.getPrecision(datePrecision));
     }
@@ -1169,18 +1228,24 @@ public class SQLiteConfig {
         }
     }
 
-    /** @param dateClass One of INTEGER, TEXT or REAL */
+    /**
+     * @param dateClass One of INTEGER, TEXT or REAL
+     */
     public void setDateClass(String dateClass) {
         this.defaultConnectionConfig.setDateClass(DateClass.getDateClass(dateClass));
     }
 
-    /** @param dateStringFormat Format of date string */
+    /**
+     * @param dateStringFormat Format of date string
+     */
     public void setDateStringFormat(String dateStringFormat) {
 
         this.defaultConnectionConfig.setDateStringFormat(dateStringFormat);
     }
 
-    /** @param milliseconds Connect to DB timeout in milliseconds */
+    /**
+     * @param milliseconds Connect to DB timeout in milliseconds
+     */
     public void setBusyTimeout(int milliseconds) {
         setPragma(Pragma.BUSY_TIMEOUT, Integer.toString(milliseconds));
         busyTimeout = milliseconds;

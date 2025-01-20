@@ -367,7 +367,8 @@ public class UDFTest {
 
         ResultSet rs =
                 stat.executeQuery(
-                        "select mySum(x) over (order by x rows between 1 preceding and 1 following) from t order by x;");
+                        "select mySum(x) over (order by x rows between 1 preceding and 1 following)"
+                                + " from t order by x;");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(3);
         assertThat(rs.next()).isTrue();

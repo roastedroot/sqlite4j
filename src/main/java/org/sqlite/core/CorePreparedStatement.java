@@ -52,13 +52,17 @@ public abstract class CorePreparedStatement extends JDBC4Statement {
         batchPos = 0;
     }
 
-    /** @see org.sqlite.jdbc3.JDBC3Statement#executeBatch() */
+    /**
+     * @see org.sqlite.jdbc3.JDBC3Statement#executeBatch()
+     */
     @Override
     public int[] executeBatch() throws SQLException {
         return Arrays.stream(executeLargeBatch()).mapToInt(l -> (int) l).toArray();
     }
 
-    /** @see org.sqlite.jdbc3.JDBC3Statement#executeLargeBatch() */
+    /**
+     * @see org.sqlite.jdbc3.JDBC3Statement#executeLargeBatch()
+     */
     @Override
     public long[] executeLargeBatch() throws SQLException {
         if (batchQueryCount == 0) {
@@ -81,7 +85,9 @@ public abstract class CorePreparedStatement extends JDBC4Statement {
                 });
     }
 
-    /** @see org.sqlite.jdbc3.JDBC3Statement#clearBatch() () */
+    /**
+     * @see org.sqlite.jdbc3.JDBC3Statement#clearBatch() ()
+     */
     @Override
     public void clearBatch() throws SQLException {
         super.clearBatch();

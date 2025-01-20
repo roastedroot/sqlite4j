@@ -35,7 +35,8 @@ public class ListenerTest {
 
         Statement create = connectionOne.createStatement();
         create.execute(
-                "CREATE TABLE IF NOT EXISTS sample (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT);");
+                "CREATE TABLE IF NOT EXISTS sample (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        + " description TEXT);");
     }
 
     @AfterEach

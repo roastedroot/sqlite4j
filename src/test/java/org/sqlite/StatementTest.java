@@ -344,7 +344,8 @@ public class StatementTest {
         // on a statement that has not generated any should return an empty result set
         Statement stat2 = conn.createStatement();
         stat.executeUpdate(
-                "with colors as (select 'insert' as color) update t1 set v = (select color from colors);");
+                "with colors as (select 'insert' as color) update t1 set v = (select color from"
+                        + " colors);");
         rs = stat2.getGeneratedKeys();
         assertThat(rs).isNotNull();
         assertThat(rs.next()).isFalse();
@@ -547,8 +548,8 @@ public class StatementTest {
     public void multipleStatements() throws SQLException {
         // ; insert into person values(1,'leo')
         stat.executeUpdate(
-                "create table person (id integer, name string); "
-                        + "insert into person values(1, 'leo'); insert into person values(2, 'yui');");
+                "create table person (id integer, name string); insert into person values(1,"
+                        + " 'leo'); insert into person values(2, 'yui');");
         ResultSet rs = stat.executeQuery("select * from person");
         assertThat(rs.next()).isTrue();
         assertThat(rs.next()).isTrue();
@@ -600,7 +601,8 @@ public class StatementTest {
     @Test
     public void defaultDateTimeTest() throws SQLException {
         stat.executeUpdate(
-                "create table daywithdefaultdatetime (id integer, datetime datatime default current_timestamp)");
+                "create table daywithdefaultdatetime (id integer, datetime datatime default"
+                        + " current_timestamp)");
         PreparedStatement prep =
                 conn.prepareStatement("insert into daywithdefaultdatetime (id) values (?)");
         prep.setInt(1, 1);

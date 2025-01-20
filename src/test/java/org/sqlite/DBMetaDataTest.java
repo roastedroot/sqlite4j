@@ -36,7 +36,8 @@ public class DBMetaDataTest {
         conn = DriverManager.getConnection("jdbc:sqlite:");
         stat = conn.createStatement();
         stat.executeUpdate(
-                "create table test (id integer primary key, fn float default 0.0, sn not null, intvalue integer(5), realvalue real(8,3), charvalue varchar(21));");
+                "create table test (id integer primary key, fn float default 0.0, sn not null,"
+                        + " intvalue integer(5), realvalue real(8,3), charvalue varchar(21));");
         stat.executeUpdate("create view testView as select * from test;");
         meta = conn.getMetaData();
     }
@@ -556,9 +557,11 @@ public class DBMetaDataTest {
 
         stat.executeUpdate("create table parent (id1 integer, id2 integer, primary key(id1, id2))");
         stat.executeUpdate(
-                "create table child1 (id1 integer, id2 integer, foreign key(id1) references parent(id1), foreign key(id2) references parent(id2))");
+                "create table child1 (id1 integer, id2 integer, foreign key(id1) references"
+                        + " parent(id1), foreign key(id2) references parent(id2))");
         stat.executeUpdate(
-                "create table child2 (id1 integer, id2 integer, foreign key(id2, id1) references parent(id2, id1))");
+                "create table child2 (id1 integer, id2 integer, foreign key(id2, id1) references"
+                        + " parent(id2, id1))");
 
         ResultSet importedKeys = meta.getImportedKeys(null, null, "child1");
 
@@ -611,9 +614,12 @@ public class DBMetaDataTest {
 
         stat.executeUpdate("create table parent (id1 integer, id2 integer, primary key(id1, id2))");
         stat.executeUpdate(
-                "create table child1 (id1 integer, id2 integer,\r\n foreign\tkey(id1) references parent(id1), foreign key(id2) references parent(id2))");
+                "create table child1 (id1 integer, id2 integer,\r\n"
+                        + " foreign\tkey(id1) references parent(id1), foreign key(id2) references"
+                        + " parent(id2))");
         stat.executeUpdate(
-                "create table child2 (id1 integer, id2 integer, foreign key(id2, id1) references parent(id2, id1))");
+                "create table child2 (id1 integer, id2 integer, foreign key(id2, id1) references"
+                        + " parent(id2, id1))");
 
         ResultSet exportedKeys = meta.getExportedKeys(null, null, "parent");
 
@@ -665,9 +671,11 @@ public class DBMetaDataTest {
         // 1. Check for named primary keys
         // SQL is deliberately in uppercase, to make sure case-sensitivity is maintained
         stat.executeUpdate(
-                "CREATE TABLE PARENT1 (ID1 INTEGER, DATA1 INTEGER, CONSTRAINT PK_PARENT PRIMARY KEY (ID1))");
+                "CREATE TABLE PARENT1 (ID1 INTEGER, DATA1 INTEGER, CONSTRAINT PK_PARENT PRIMARY KEY"
+                        + " (ID1))");
         stat.executeUpdate(
-                "CREATE TABLE CHILD1 (ID1 INTEGER, DATA2 INTEGER, FOREIGN KEY(ID1) REFERENCES PARENT1(ID1))");
+                "CREATE TABLE CHILD1 (ID1 INTEGER, DATA2 INTEGER, FOREIGN KEY(ID1) REFERENCES"
+                        + " PARENT1(ID1))");
 
         exportedKeys = meta.getExportedKeys(null, null, "PARENT1");
 
@@ -687,7 +695,8 @@ public class DBMetaDataTest {
         // SQL is deliberately in mixed case, to make sure case-sensitivity is maintained
         stat.executeUpdate("CREATE TABLE Parent2 (Id1 INTEGER, DATA1 INTEGER, PRIMARY KEY (Id1))");
         stat.executeUpdate(
-                "CREATE TABLE Child2 (Id1 INTEGER, DATA2 INTEGER, CONSTRAINT FK_Child2 FOREIGN KEY(Id1) REFERENCES Parent2(Id1))");
+                "CREATE TABLE Child2 (Id1 INTEGER, DATA2 INTEGER, CONSTRAINT FK_Child2 FOREIGN"
+                        + " KEY(Id1) REFERENCES Parent2(Id1))");
 
         exportedKeys = meta.getExportedKeys(null, null, "Parent2");
 
@@ -708,11 +717,20 @@ public class DBMetaDataTest {
     public void getImportedKeysMultipleColumns() throws SQLException {
         ResultSet importedKeys;
         stat.executeUpdate(
-                "CREATE TABLE PONE ( ID_FIRST_ONE INTEGER NOT NULL, ID_SECOND_ONE INTEGER NOT NULL, ADDITIONAL_ONE TEXT, CONSTRAINT PONE_PK PRIMARY KEY (ID_FIRST_ONE, ID_SECOND_ONE) )");
+                "CREATE TABLE PONE ( ID_FIRST_ONE INTEGER NOT NULL, ID_SECOND_ONE INTEGER NOT NULL,"
+                        + " ADDITIONAL_ONE TEXT, CONSTRAINT PONE_PK PRIMARY KEY (ID_FIRST_ONE,"
+                        + " ID_SECOND_ONE) )");
         stat.executeUpdate(
-                "CREATE TABLE PTWO ( ID_FIRST_TWO INTEGER NOT NULL, ID_SECOND_TWO INTEGER NOT NULL, ADDITIONAL_TWO TEXT, CONSTRAINT PTWO_PK PRIMARY KEY (ID_FIRST_TWO, ID_SECOND_TWO) )");
+                "CREATE TABLE PTWO ( ID_FIRST_TWO INTEGER NOT NULL, ID_SECOND_TWO INTEGER NOT NULL,"
+                        + " ADDITIONAL_TWO TEXT, CONSTRAINT PTWO_PK PRIMARY KEY (ID_FIRST_TWO,"
+                        + " ID_SECOND_TWO) )");
         stat.executeUpdate(
-                "CREATE TABLE CHILD ( ID_CHILD INTEGER NOT NULL, ID_CHILD_TO_ONE INTEGER NOT NULL, ID_CHILD_TO_TWO INTEGER NOT NULL, CONSTRAINT CHILD_PK PRIMARY KEY (ID_CHILD, ID_CHILD_TO_ONE), CONSTRAINT \"PONE_FK01\" FOREIGN KEY (ID_CHILD, ID_CHILD_TO_ONE) REFERENCES PONE (ID_FIRST_ONE, ID_SECOND_ONE) ON DELETE CASCADE, CONSTRAINT PTWO_FK02 FOREIGN KEY (ID_CHILD, ID_CHILD_TO_TWO) REFERENCES PTWO (ID_FIRST_TWO, ID_SECOND_TWO) )");
+                "CREATE TABLE CHILD ( ID_CHILD INTEGER NOT NULL, ID_CHILD_TO_ONE INTEGER NOT NULL,"
+                    + " ID_CHILD_TO_TWO INTEGER NOT NULL, CONSTRAINT CHILD_PK PRIMARY KEY"
+                    + " (ID_CHILD, ID_CHILD_TO_ONE), CONSTRAINT \"PONE_FK01\" FOREIGN KEY"
+                    + " (ID_CHILD, ID_CHILD_TO_ONE) REFERENCES PONE (ID_FIRST_ONE, ID_SECOND_ONE)"
+                    + " ON DELETE CASCADE, CONSTRAINT PTWO_FK02 FOREIGN KEY (ID_CHILD,"
+                    + " ID_CHILD_TO_TWO) REFERENCES PTWO (ID_FIRST_TWO, ID_SECOND_TWO) )");
 
         importedKeys = meta.getImportedKeys(null, null, "CHILD");
 
@@ -760,9 +778,11 @@ public class DBMetaDataTest {
         // 1. Check for named primary keys
         // SQL is deliberately in uppercase, to make sure case-sensitivity is maintained
         stat.executeUpdate(
-                "CREATE TABLE PARENT1 (ID1 INTEGER, DATA1 INTEGER, CONSTRAINT PK_PARENT PRIMARY KEY (ID1))");
+                "CREATE TABLE PARENT1 (ID1 INTEGER, DATA1 INTEGER, CONSTRAINT PK_PARENT PRIMARY KEY"
+                        + " (ID1))");
         stat.executeUpdate(
-                "CREATE TABLE CHILD1 (ID1 INTEGER, DATA2 INTEGER, FOREIGN KEY(ID1) REFERENCES PARENT1(ID1))");
+                "CREATE TABLE CHILD1 (ID1 INTEGER, DATA2 INTEGER, FOREIGN KEY(ID1) REFERENCES"
+                        + " PARENT1(ID1))");
 
         importedKeys = meta.getImportedKeys(null, null, "CHILD1");
 
@@ -807,7 +827,8 @@ public class DBMetaDataTest {
 
         // SQL is deliberately in mixed-case, to make sure case-sensitivity is maintained
         stat.executeUpdate(
-                "CREATE TABLE PARENT1 (ID1 INTEGER, DATA1 INTEGER, CONSTRAINT PK_PARENT PRIMARY KEY (ID1))");
+                "CREATE TABLE PARENT1 (ID1 INTEGER, DATA1 INTEGER, CONSTRAINT PK_PARENT PRIMARY KEY"
+                        + " (ID1))");
         stat.executeUpdate(
                 "CREATE TABLE CHILD1 (ID1 INTEGER, DATA2 INTEGER, "
                         + "CONSTRAINT FK_Parent1 FOREIGN KEY(ID1) REFERENCES Parent1(Id1))");
@@ -833,9 +854,11 @@ public class DBMetaDataTest {
         ResultSet importedKeys;
 
         stat.executeUpdate(
-                "CREATE TABLE PARENT1 (ID1 INTEGER, DATA1 INTEGER, CONSTRAINT PK_PARENT1 PRIMARY KEY (ID1))");
+                "CREATE TABLE PARENT1 (ID1 INTEGER, DATA1 INTEGER, CONSTRAINT PK_PARENT1 PRIMARY"
+                        + " KEY (ID1))");
         stat.executeUpdate(
-                "CREATE TABLE PARENT2 (ID2 INTEGER, DATA2 INTEGER, CONSTRAINT PK_PARENT2 PRIMARY KEY (ID2))");
+                "CREATE TABLE PARENT2 (ID2 INTEGER, DATA2 INTEGER, CONSTRAINT PK_PARENT2 PRIMARY"
+                        + " KEY (ID2))");
         stat.executeUpdate(
                 "CREATE TABLE CHILD1 (ID1 INTEGER, ID2 INTEGER, "
                         + "CONSTRAINT FK_PARENT1 FOREIGN KEY(ID1) REFERENCES PARENT1(ID1), "
@@ -866,7 +889,8 @@ public class DBMetaDataTest {
         // Unnamed foreign keys and unnamed primary keys
         stat.executeUpdate("CREATE TABLE PARENT3 (ID3 INTEGER, DATA3 INTEGER, PRIMARY KEY (ID3))");
         stat.executeUpdate(
-                "CREATE TABLE PARENT4 (ID4 INTEGER, DATA4 INTEGER, CONSTRAINT PK_PARENT4 PRIMARY KEY (ID4))");
+                "CREATE TABLE PARENT4 (ID4 INTEGER, DATA4 INTEGER, CONSTRAINT PK_PARENT4 PRIMARY"
+                        + " KEY (ID4))");
         stat.executeUpdate(
                 "CREATE TABLE CHILD2 (ID3 INTEGER, ID4 INTEGER, "
                         + "FOREIGN KEY(ID3) REFERENCES PARENT3(ID3), "
@@ -903,13 +927,13 @@ public class DBMetaDataTest {
                         + "CONSTRAINT PK_Authors PRIMARY KEY (Id),"
                         + "  CONSTRAINT CHECK_UPPERCASE_Name CHECK (Name=UPPER(Name)))");
         stat.executeUpdate(
-                "CREATE TABLE Books (Id INTEGER NOT NULL, Title VARCHAR(255) NOT NULL, PreviousEditionId INTEGER,"
-                        + "CONSTRAINT PK_Books PRIMARY KEY (Id), "
-                        + "CONSTRAINT FK_PreviousEdition FOREIGN KEY(PreviousEditionId) REFERENCES Books (Id))");
+                "CREATE TABLE Books (Id INTEGER NOT NULL, Title VARCHAR(255) NOT NULL,"
+                    + " PreviousEditionId INTEGER,CONSTRAINT PK_Books PRIMARY KEY (Id), CONSTRAINT"
+                    + " FK_PreviousEdition FOREIGN KEY(PreviousEditionId) REFERENCES Books (Id))");
         stat.executeUpdate(
-                "CREATE TABLE BookAuthors (BookId INTEGER NOT NULL, AuthorId INTEGER NOT NULL, "
-                        + "CONSTRAINT FK_Y_Book FOREIGN KEY (BookId) REFERENCES Books (Id), "
-                        + "CONSTRAINT FK_Z_Author FOREIGN KEY (AuthorId) REFERENCES Authors (Id)) ");
+                "CREATE TABLE BookAuthors (BookId INTEGER NOT NULL, AuthorId INTEGER NOT NULL,"
+                    + " CONSTRAINT FK_Y_Book FOREIGN KEY (BookId) REFERENCES Books (Id), CONSTRAINT"
+                    + " FK_Z_Author FOREIGN KEY (AuthorId) REFERENCES Authors (Id)) ");
 
         ResultSet importedKeys;
 
@@ -980,11 +1004,14 @@ public class DBMetaDataTest {
         ResultSet exportedKeys;
 
         stat.executeUpdate(
-                "CREATE TABLE PARENT1 (ID1 INTEGER, ID2 INTEGER, CONSTRAINT PK_PARENT1 PRIMARY KEY (ID1))");
+                "CREATE TABLE PARENT1 (ID1 INTEGER, ID2 INTEGER, CONSTRAINT PK_PARENT1 PRIMARY KEY"
+                        + " (ID1))");
         stat.executeUpdate(
-                "CREATE TABLE CHILD1 (ID1 INTEGER, CONSTRAINT FK_PARENT1 FOREIGN KEY(ID1) REFERENCES PARENT1(ID1))");
+                "CREATE TABLE CHILD1 (ID1 INTEGER, CONSTRAINT FK_PARENT1 FOREIGN KEY(ID1)"
+                        + " REFERENCES PARENT1(ID1))");
         stat.executeUpdate(
-                "CREATE TABLE CHILD2 (ID2 INTEGER, CONSTRAINT FK_PARENT2 FOREIGN KEY(ID2) REFERENCES PARENT1(ID2))");
+                "CREATE TABLE CHILD2 (ID2 INTEGER, CONSTRAINT FK_PARENT2 FOREIGN KEY(ID2)"
+                        + " REFERENCES PARENT1(ID2))");
 
         exportedKeys = meta.getExportedKeys(null, null, "PARENT1");
 
@@ -1013,7 +1040,8 @@ public class DBMetaDataTest {
     public void getImportedKeysWithIncorrectReference() throws SQLException {
 
         stat.executeUpdate(
-                "create table child (id1 integer, id2 integer, foreign key(id1) references parent(id1))");
+                "create table child (id1 integer, id2 integer, foreign key(id1) references"
+                        + " parent(id1))");
 
         try (ResultSet importedKeys = meta.getImportedKeys(null, null, "child")) {
             assertThat(importedKeys.next()).isTrue();
@@ -1413,29 +1441,41 @@ public class DBMetaDataTest {
                         + "\r\nCONSTraint\r\nnamed  primary\r\n\t\t key   (col3, col2  ));");
         // mixed-case table, column and primary key names - GitHub issue #219
         stat.executeUpdate(
-                "CREATE TABLE Pk5 (Col1, Col2, Col3, Col4, CONSTRAINT NamedPk PRIMARY KEY (Col3, Col2));");
+                "CREATE TABLE Pk5 (Col1, Col2, Col3, Col4, CONSTRAINT NamedPk PRIMARY KEY (Col3,"
+                        + " Col2));");
         // quoted table, column and primary key names - GitHub issue #219
         stat.executeUpdate(
-                "CREATE TABLE `Pk6` (`Col1`, `Col2`, `Col3`, `Col4`, CONSTRAINT `NamedPk` PRIMARY KEY (`Col3`, `Col2`));");
+                "CREATE TABLE `Pk6` (`Col1`, `Col2`, `Col3`, `Col4`, CONSTRAINT `NamedPk` PRIMARY"
+                        + " KEY (`Col3`, `Col2`));");
         // spaces before and after "primary key" - GitHub issue #236
         stat.executeUpdate(
-                "CREATE TABLE pk7 (col1, col2, col3, col4 VARCHAR(10),PRIMARY KEY (col1, col2, col3));");
+                "CREATE TABLE pk7 (col1, col2, col3, col4 VARCHAR(10),PRIMARY KEY (col1, col2,"
+                        + " col3));");
         stat.executeUpdate(
-                "CREATE TABLE pk8 (col1, col2, col3, col4 VARCHAR(10), PRIMARY KEY(col1, col2, col3));");
+                "CREATE TABLE pk8 (col1, col2, col3, col4 VARCHAR(10), PRIMARY KEY(col1, col2,"
+                        + " col3));");
         stat.executeUpdate(
-                "CREATE TABLE pk9 (col1, col2, col3, col4 VARCHAR(10),PRIMARY KEY(col1, col2, col3));");
+                "CREATE TABLE pk9 (col1, col2, col3, col4 VARCHAR(10),PRIMARY KEY(col1, col2,"
+                        + " col3));");
         stat.executeUpdate(
-                "CREATE TABLE `Pk10` (`Col1`, `Col2`, `Col3`, `Col4`, CONSTRAINT `NamedPk`PRIMARY KEY (`Col3`, `Col2`));");
+                "CREATE TABLE `Pk10` (`Col1`, `Col2`, `Col3`, `Col4`, CONSTRAINT `NamedPk`PRIMARY"
+                        + " KEY (`Col3`, `Col2`));");
         stat.executeUpdate(
-                "CREATE TABLE `Pk11` (`Col1`, `Col2`, `Col3`, `Col4`, CONSTRAINT `NamedPk` PRIMARY KEY(`Col3`, `Col2`));");
+                "CREATE TABLE `Pk11` (`Col1`, `Col2`, `Col3`, `Col4`, CONSTRAINT `NamedPk` PRIMARY"
+                        + " KEY(`Col3`, `Col2`));");
         stat.executeUpdate(
-                "CREATE TABLE `Pk12` (`Col1`, `Col2`, `Col3`, `Col4`, CONSTRAINT`NamedPk`PRIMARY KEY(`Col3`,`Col2`));");
+                "CREATE TABLE `Pk12` (`Col1`, `Col2`, `Col3`, `Col4`, CONSTRAINT`NamedPk`PRIMARY"
+                        + " KEY(`Col3`,`Col2`));");
         stat.executeUpdate(
-                "CREATE TABLE \"Pk13\" (\"Col1\", \"Col2\", \"Col3\", \"Col4\", CONSTRAINT \"NamedPk\" PRIMARY KEY(\"Col3\",\"Col2\"));");
+                "CREATE TABLE \"Pk13\" (\"Col1\", \"Col2\", \"Col3\", \"Col4\", CONSTRAINT"
+                        + " \"NamedPk\" PRIMARY KEY(\"Col3\",\"Col2\"));");
         stat.executeUpdate(
-                "CREATE TABLE \"Pk14\" (\"Col1\", \"Col2\", \"Col3\", \"Col4\", PRIMARY KEY(\"Col3\"), FOREIGN KEY (\"Col1\") REFERENCES \"pk1\" (\"col1\"))");
+                "CREATE TABLE \"Pk14\" (\"Col1\", \"Col2\", \"Col3\", \"Col4\", PRIMARY"
+                        + " KEY(\"Col3\"), FOREIGN KEY (\"Col1\") REFERENCES \"pk1\" (\"col1\"))");
         stat.executeUpdate(
-                "CREATE TABLE \"Pk15\" (\"Col1\", \"Col2\", \"Col3\", \"Col4\", PRIMARY KEY(\"Col3\", \"Col2\"), FOREIGN KEY (\"Col1\") REFERENCES \"pk1\" (\"col1\"))");
+                "CREATE TABLE \"Pk15\" (\"Col1\", \"Col2\", \"Col3\", \"Col4\", PRIMARY"
+                        + " KEY(\"Col3\", \"Col2\"), FOREIGN KEY (\"Col1\") REFERENCES \"pk1\""
+                        + " (\"col1\"))");
 
         rs = meta.getPrimaryKeys(null, null, "nopk");
         assertThat(rs.next()).isFalse();
@@ -1559,7 +1599,9 @@ public class DBMetaDataTest {
         // With explicit primary column defined.
         stat.executeUpdate("create table REFERRED (ID integer primary key not null)");
         stat.executeUpdate(
-                "create table REFERRING (ID integer, RID integer, constraint fk\r\n foreign\tkey\r\n(RID) references REFERRED(id))");
+                "create table REFERRING (ID integer, RID integer, constraint fk\r\n"
+                        + " foreign\tkey\r\n"
+                        + "(RID) references REFERRED(id))");
 
         exportedKeys = meta.getExportedKeys(null, null, "referred");
         assertThat(exportedKeys.getString("PKTABLE_NAME")).isEqualTo("REFERRED");
@@ -1612,7 +1654,8 @@ public class DBMetaDataTest {
     @Test
     public void getIndexInfoIndexedSingle() throws SQLException {
         stat.executeUpdate(
-                "create table testindex (id integer primary key, fn float default 0.0, sn not null);");
+                "create table testindex (id integer primary key, fn float default 0.0, sn not"
+                        + " null);");
         stat.executeUpdate("create index testindex_idx on testindex (sn);");
 
         ResultSet rs = meta.getIndexInfo(null, null, "testindex", false, false);
@@ -1625,7 +1668,8 @@ public class DBMetaDataTest {
     @Test
     public void getIndexInfoIndexedSingleExpr() throws SQLException {
         stat.executeUpdate(
-                "create table testindex (id integer primary key, fn float default 0.0, sn not null);");
+                "create table testindex (id integer primary key, fn float default 0.0, sn not"
+                        + " null);");
         stat.executeUpdate("create index testindex_idx on testindex (sn, fn/2);");
 
         ResultSet rs = meta.getIndexInfo(null, null, "testindex", false, false);
@@ -1638,7 +1682,8 @@ public class DBMetaDataTest {
     @Test
     public void getIndexInfoIndexedMulti() throws SQLException {
         stat.executeUpdate(
-                "create table testindex (id integer primary key, fn float default 0.0, sn not null);");
+                "create table testindex (id integer primary key, fn float default 0.0, sn not"
+                        + " null);");
         stat.executeUpdate("create index testindex_idx on testindex (sn);");
         stat.executeUpdate("create index testindex_pk_idx on testindex (id);");
 

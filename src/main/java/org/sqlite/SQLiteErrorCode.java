@@ -71,7 +71,8 @@ public enum SQLiteErrorCode {
             "The transaction that was active when the SQL statement first started was rolled back"),
     SQLITE_AUTH_USER(
             279,
-            "An operation was attempted on a database for which the logged in user lacks sufficient authorization"),
+            "An operation was attempted on a database for which the logged in user lacks sufficient"
+                    + " authorization"),
     SQLITE_BUSY_RECOVERY(
             261, "Another process is busy recovering a WAL mode database file following a crash"),
     SQLITE_BUSY_SNAPSHOT(517, "Another database connection has already written to the database"),
@@ -91,13 +92,15 @@ public enum SQLiteErrorCode {
     SQLITE_CONSTRAINT_COMMITHOOK(531, "A commit hook callback returned non-zero"),
     SQLITE_CONSTRAINT_DATATYPE(
             3091,
-            "An insert or update attempted to store a value inconsistent with the column's declared type in a table defined as STRICT"),
+            "An insert or update attempted to store a value inconsistent with the column's declared"
+                    + " type in a table defined as STRICT"),
     SQLITE_CONSTRAINT_FOREIGNKEY(787, "A foreign key constraint failed"),
     SQLITE_CONSTRAINT_FUNCTION(1043, "Error reported by extension function"),
     SQLITE_CONSTRAINT_NOTNULL(1299, "A NOT NULL constraint failed"),
     SQLITE_CONSTRAINT_PINNED(
             2835,
-            "An UPDATE trigger attempted to delete the row that was being updated in the middle of the update"),
+            "An UPDATE trigger attempted to delete the row that was being updated in the middle of"
+                    + " the update"),
     SQLITE_CONSTRAINT_PRIMARYKEY(1555, "A PRIMARY KEY constraint failed"),
     SQLITE_CONSTRAINT_ROWID(2579, "rowid is not unique"),
     SQLITE_CONSTRAINT_TRIGGER(
@@ -109,24 +112,28 @@ public enum SQLiteErrorCode {
     SQLITE_CORRUPT_VTAB(267, "Content in the virtual table is corrupt"),
     SQLITE_ERROR_MISSING_COLLSEQ(
             257,
-            "An SQL statement could not be prepared because a collating sequence named in that SQL statement could not be located"),
+            "An SQL statement could not be prepared because a collating sequence named in that SQL"
+                    + " statement could not be located"),
     SQLITE_ERROR_RETRY(513, "used internally"),
     SQLITE_ERROR_SNAPSHOT(769, "the historical snapshot is no longer available"),
     SQLITE_IOERR_ACCESS(3338, "I/O error within the xAccess"),
     SQLITE_IOERR_AUTH(7178, "reserved for use by extensions"),
     SQLITE_IOERR_BEGIN_ATOMIC(
             7434,
-            "the underlying operating system reported and error on the SQLITE_FCNTL_BEGIN_ATOMIC_WRITE file-control"),
+            "the underlying operating system reported and error on the"
+                    + " SQLITE_FCNTL_BEGIN_ATOMIC_WRITE file-control"),
     SQLITE_IOERR_BLOCKED(2826, "no longer used"),
     SQLITE_IOERR_CHECKRESERVEDLOCK(3594, "I/O error within xCheckReservedLock"),
     SQLITE_IOERR_CLOSE(4106, "I/O error within xClose"),
     SQLITE_IOERR_COMMIT_ATOMIC(
             7690,
-            "the underlying operating system reported and error on the SQLITE_FCNTL_COMMIT_ATOMIC_WRITE file-control"),
+            "the underlying operating system reported and error on the"
+                    + " SQLITE_FCNTL_COMMIT_ATOMIC_WRITE file-control"),
     SQLITE_IOERR_CONVPATH(6666, "cygwin_conv_path() system call failed"),
     SQLITE_IOERR_CORRUPTFS(
             8458,
-            "I/O error in the VFS layer, a seek or read failure was due to the request not falling within the file's boundary rather than an ordinary device failure"),
+            "I/O error in the VFS layer, a seek or read failure was due to the request not falling"
+                    + " within the file's boundary rather than an ordinary device failure"),
     SQLITE_IOERR_DATA(
             8202,
             "I/O error in the VFS shim, the checksum on a page of the database file is incorrect"),
@@ -147,7 +154,8 @@ public enum SQLiteErrorCode {
     SQLITE_IOERR_READ(266, "I/O error in the VFS layer while trying to read from a file on disk"),
     SQLITE_IOERR_ROLLBACK_ATOMIC(
             7946,
-            "the underlying operating system reported and error on the SQLITE_FCNTL_ROLLBACK_ATOMIC_WRITE file-control"),
+            "the underlying operating system reported and error on the"
+                    + " SQLITE_FCNTL_ROLLBACK_ATOMIC_WRITE file-control"),
     SQLITE_IOERR_SEEK(5642, "I/O error while trying to seek a file descriptor"),
     SQLITE_IOERR_SHMLOCK(5130, "no longer used"),
     SQLITE_IOERR_SHMMAP(
@@ -171,7 +179,8 @@ public enum SQLiteErrorCode {
     SQLITE_NOTICE_RECOVER_WAL(283, "a WAL mode database file is recovered"),
     SQLITE_OK_LOAD_PERMANENTLY(
             256,
-            "the extension remains loaded into the process address space after the database connection closes"),
+            "the extension remains loaded into the process address space after the database"
+                    + " connection closes"),
     SQLITE_READONLY_CANTINIT(
             1288, "the current process does not have write permission on the shared memory region"),
     SQLITE_READONLY_CANTLOCK(
@@ -179,7 +188,8 @@ public enum SQLiteErrorCode {
     SQLITE_READONLY_DBMOVED(1032, "The database file has been moved since it was opened"),
     SQLITE_READONLY_DIRECTORY(
             1544,
-            "Process does not have permission to create a journal file in the same directory as the database and the creation of a journal file is a prerequisite for writing"),
+            "Process does not have permission to create a journal file in the same directory as the"
+                    + " database and the creation of a journal file is a prerequisite for writing"),
     SQLITE_READONLY_RECOVERY(264, "The database file needs to be recovered"),
     SQLITE_READONLY_ROLLBACK(776, "Hot journal needs to be rolled back"),
     SQLITE_WARNING_AUTOINDEX(284, "automatic indexing is used");
@@ -209,7 +219,9 @@ public enum SQLiteErrorCode {
         return UNKNOWN_ERROR;
     }
 
-    /** @see java.lang.Enum#toString() */
+    /**
+     * @see java.lang.Enum#toString()
+     */
     @Override
     public String toString() {
         return String.format("[%s] %s", this.name(), message);

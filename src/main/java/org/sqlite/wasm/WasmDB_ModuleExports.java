@@ -5,6 +5,7 @@ import com.dylibso.chicory.runtime.Instance;
 import com.dylibso.chicory.runtime.Memory;
 import com.dylibso.chicory.runtime.TableInstance;
 import com.dylibso.chicory.wasm.types.Value;
+
 // import javax.annotation.processing.Generated;
 
 // TODO: roll out a final version of this class with memoized accessors

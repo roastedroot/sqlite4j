@@ -77,17 +77,16 @@ public class RSMetaDataTest {
                         + "col28 TIMESTAMP, col29 CHAR(70), col30 TEXT, col31 TIMESTAMP)");
         // insert empty data into table otherwise getColumnType returns null
         stat.executeUpdate(
-                "insert into tbl values (1, 2, 3, 4, 5, 6, 7, 8, 9,"
-                        + "'c', 'varchar', 'varying', 'n', 'n','nvarchar', 'text', 'clob',"
-                        + "null, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 0, 12345, 123456, 0, 'char', 'some text',"
-                        + "'2022-08-26 10:20:00.123')");
+                "insert into tbl values (1, 2, 3, 4, 5, 6, 7, 8, 9,'c', 'varchar', 'varying', 'n',"
+                        + " 'n','nvarchar', 'text', 'clob',null, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 0,"
+                        + " 12345, 123456, 0, 'char', 'some text','2022-08-26 10:20:00.123')");
         meta =
                 stat.executeQuery(
-                                "select col1, col2, col3, col4, col5, col6, col7, col8, col9, "
-                                        + "col10, col11, col12, col13, col14, col15, col16, col17, col18, "
-                                        + "col19, col20, col21, col22, col23, col24, col25, col26, col27, "
-                                        + "col28, col29, col30, "
-                                        + "cast(col1 as boolean), col31 from tbl")
+                                "select col1, col2, col3, col4, col5, col6, col7, col8, col9,"
+                                    + " col10, col11, col12, col13, col14, col15, col16, col17,"
+                                    + " col18, col19, col20, col21, col22, col23, col24, col25,"
+                                    + " col26, col27, col28, col29, col30, cast(col1 as boolean),"
+                                    + " col31 from tbl")
                         .getMetaData();
 
         assertThat(meta.getColumnType(1)).isEqualTo(Types.INTEGER);
@@ -139,7 +138,8 @@ public class RSMetaDataTest {
     public void columTypeWithoutTable() throws SQLException {
         ResultSet rs =
                 stat.executeQuery(
-                        "SELECT FALSE, 1, 3900000000, CAST(3900000000 AS BIGINT), CAST(3900000000 AS VARCHAR(50))");
+                        "SELECT FALSE, 1, 3900000000, CAST(3900000000 AS BIGINT), CAST(3900000000"
+                                + " AS VARCHAR(50))");
         ResultSetMetaData meta = rs.getMetaData();
 
         assertThat(rs.next()).isTrue();
@@ -165,7 +165,8 @@ public class RSMetaDataTest {
     @Test
     public void testGetColumnClassName() throws SQLException {
         stat.executeUpdate(
-                "create table gh_541 (id int, DESCRIPTION varchar(40), price DOUBLE, data BLOB, bool BOOLEAN)");
+                "create table gh_541 (id int, DESCRIPTION varchar(40), price DOUBLE, data BLOB,"
+                        + " bool BOOLEAN)");
         stat.executeUpdate("insert into gh_541 values (1, 'description', 28.4, null, True);");
         ResultSetMetaData meta = stat.executeQuery("select * from gh_541").getMetaData();
 

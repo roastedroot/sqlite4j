@@ -74,10 +74,13 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
 
     /** FULL locale dependent date or time style. */
     public static final int FULL = DateFormat.FULL;
+
     /** LONG locale dependent date or time style. */
     public static final int LONG = DateFormat.LONG;
+
     /** MEDIUM locale dependent date or time style. */
     public static final int MEDIUM = DateFormat.MEDIUM;
+
     /** SHORT locale dependent date or time style. */
     public static final int SHORT = DateFormat.SHORT;
 
@@ -304,6 +307,7 @@ public class FastDateFormat extends Format implements DateParser, DatePrinter {
             final int dateStyle, final int timeStyle, final TimeZone timeZone) {
         return getDateTimeInstance(dateStyle, timeStyle, timeZone, null);
     }
+
     /**
      * Gets a date/time formatter instance using the specified style, time zone and locale.
      *

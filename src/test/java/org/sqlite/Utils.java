@@ -41,7 +41,8 @@ public class Utils {
                         || compileOptions.contains("ENABLE_MATH_FUNCTIONS");
         assumeThat(expected)
                 .as(
-                        "SQLite has to be compiled with JDBC Extensions or SQLITE_ENABLE_MATH_FUNCTIONS")
+                        "SQLite has to be compiled with JDBC Extensions or"
+                                + " SQLITE_ENABLE_MATH_FUNCTIONS")
                 .isTrue();
     }
 
@@ -53,7 +54,8 @@ public class Utils {
                         && !compileOptions.contains("ENABLE_MATH_FUNCTIONS");
         assumeThat(expected)
                 .as(
-                        "SQLite has to be compiled with JDBC Extensions and without SQLITE_ENABLE_MATH_FUNCTIONS")
+                        "SQLite has to be compiled with JDBC Extensions and without"
+                                + " SQLITE_ENABLE_MATH_FUNCTIONS")
                 .isTrue();
     }
 }

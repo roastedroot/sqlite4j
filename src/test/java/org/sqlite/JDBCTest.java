@@ -170,7 +170,8 @@ public class JDBCTest {
                         .isThrownBy(
                                 () ->
                                         statement.execute(
-                                                "CREATE TABLE TestTable(ID VARCHAR(255), PRIMARY KEY(ID))"));
+                                                "CREATE TABLE TestTable(ID VARCHAR(255), PRIMARY"
+                                                        + " KEY(ID))"));
             }
             connection.rollback();
 
@@ -227,7 +228,8 @@ public class JDBCTest {
                                                             int value = rs.getInt("testval");
                                                             count.incrementAndGet();
                                                             statement.executeUpdate(
-                                                                    "UPDATE TestTable SET testval = "
+                                                                    "UPDATE TestTable SET testval ="
+                                                                            + " "
                                                                             + (value + 1)
                                                                             + " WHERE ID = "
                                                                             + id);

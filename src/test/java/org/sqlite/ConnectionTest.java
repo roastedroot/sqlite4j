@@ -83,7 +83,8 @@ public class ConnectionTest {
                 Statement stat = conn.createStatement()) {
 
             stat.executeUpdate(
-                    "create table track(id integer primary key, name, aid, foreign key (aid) references artist(id))");
+                    "create table track(id integer primary key, name, aid, foreign key (aid)"
+                            + " references artist(id))");
             stat.executeUpdate("create table artist(id integer primary key, name)");
 
             stat.executeUpdate("insert into artist values(10, 'leo')");

@@ -230,7 +230,8 @@ public class OSInfo {
                 } else {
                     LogHolder.logger.warn(
                             () ->
-                                    "readelf not found. Cannot check if running on an armhf system, armel architecture will be presumed");
+                                    "readelf not found. Cannot check if running on an armhf system,"
+                                            + " armel architecture will be presumed");
                 }
             } catch (IOException | InterruptedException e) {
                 // ignored: fall back to "arm" arch (soft-float ABI)

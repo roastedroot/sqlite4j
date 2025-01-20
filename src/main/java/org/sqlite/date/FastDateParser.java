@@ -748,12 +748,16 @@ public class FastDateParser implements DateParser, Serializable {
 
         /** Index of zone id */
         private static final int ID = 0;
+
         /** Index of the long name of zone in standard time */
         private static final int LONG_STD = 1;
+
         /** Index of the short name of zone in standard time */
         private static final int SHORT_STD = 2;
+
         /** Index of the long name of zone in daylight saving time */
         private static final int LONG_DST = 3;
+
         /** Index of the short name of zone in daylight saving time */
         private static final int SHORT_DST = 4;
 

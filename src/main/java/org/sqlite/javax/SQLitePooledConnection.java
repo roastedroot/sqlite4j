@@ -65,7 +65,10 @@ public class SQLitePooledConnection extends JDBC4PooledConnection {
     public SQLiteConnection getPhysicalConn() {
         return physicalConn;
     }
-    /** @see javax.sql.PooledConnection#close() */
+
+    /**
+     * @see javax.sql.PooledConnection#close()
+     */
     public void close() throws SQLException {
         if (handleConn != null) {
             listeners.clear();
@@ -81,7 +84,9 @@ public class SQLitePooledConnection extends JDBC4PooledConnection {
         }
     }
 
-    /** @see javax.sql.PooledConnection#getConnection() */
+    /**
+     * @see javax.sql.PooledConnection#getConnection()
+     */
     public Connection getConnection() throws SQLException {
         if (handleConn != null) handleConn.close();
 

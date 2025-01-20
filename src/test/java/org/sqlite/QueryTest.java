@@ -265,14 +265,16 @@ public class QueryTest {
 
             ResultSet rs =
                     statement.executeQuery(
-                            "select group_concat(ifnull(shortname, name)) from mxp, person where mxp.mid=2 and mxp.pid=person.id and mxp.type='T'");
+                            "select group_concat(ifnull(shortname, name)) from mxp, person where"
+                                    + " mxp.mid=2 and mxp.pid=person.id and mxp.type='T'");
             while (rs.next()) {
                 // read the result set
                 assertThat(rs.getString(1)).isEqualTo("Y,abc");
             }
             rs =
                     statement.executeQuery(
-                            "select group_concat(ifnull(shortname, name)) from mxp, person where mxp.mid=1 and mxp.pid=person.id and mxp.type='T'");
+                            "select group_concat(ifnull(shortname, name)) from mxp, person where"
+                                    + " mxp.mid=1 and mxp.pid=person.id and mxp.type='T'");
             while (rs.next()) {
                 // read the result set
                 assertThat(rs.getString(1)).isEqualTo("Y");
@@ -280,7 +282,8 @@ public class QueryTest {
 
             PreparedStatement ps =
                     conn.prepareStatement(
-                            "select group_concat(ifnull(shortname, name)) from mxp, person where mxp.mid=? and mxp.pid=person.id and mxp.type='T'");
+                            "select group_concat(ifnull(shortname, name)) from mxp, person where"
+                                    + " mxp.mid=? and mxp.pid=person.id and mxp.type='T'");
             ps.clearParameters();
             ps.setInt(1, 2);
             rs = ps.executeQuery();

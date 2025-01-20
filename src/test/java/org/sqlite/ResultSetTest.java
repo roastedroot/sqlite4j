@@ -201,7 +201,8 @@ class ResultSetTest {
     @Test
     void testGetBigDecimal() throws SQLException {
         stat.executeUpdate(
-                "create table bigdecimal(c1, c2 integer, c3 real, c4 double, c5 decimal, c6 numeric, c7 float)");
+                "create table bigdecimal(c1, c2 integer, c3 real, c4 double, c5 decimal, c6"
+                        + " numeric, c7 float)");
         stat.executeUpdate("insert into bigdecimal values (1, 2, 3, 4, 5, 6, 7)");
         stat.executeUpdate("insert into bigdecimal values ('1', '2', '3', '4', '5', '6', '7')");
         stat.executeUpdate("insert into bigdecimal values (1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1)");

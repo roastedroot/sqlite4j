@@ -116,9 +116,11 @@ public class InsertQueryTest {
         try {
             Statement st = factory.getConnection().createStatement();
             st.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS data (fid VARCHAR(255) PRIMARY KEY, type VARCHAR(64), data BLOB);");
+                    "CREATE TABLE IF NOT EXISTS data (fid VARCHAR(255) PRIMARY KEY, type"
+                            + " VARCHAR(64), data BLOB);");
             st.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS ResourcesTags (bd_fid VARCHAR(255), name VARCHAR(64), version INTEGER);");
+                    "CREATE TABLE IF NOT EXISTS ResourcesTags (bd_fid VARCHAR(255), name"
+                            + " VARCHAR(64), version INTEGER);");
             st.close();
 
             factory.getConnection().setAutoCommit(false);

@@ -35,7 +35,9 @@ public class SQLiteConnectionPoolDataSource extends SQLiteDataSource
         super(config);
     }
 
-    /** @see javax.sql.ConnectionPoolDataSource#getPooledConnection() */
+    /**
+     * @see javax.sql.ConnectionPoolDataSource#getPooledConnection()
+     */
     public PooledConnection getPooledConnection() throws SQLException {
         return getPooledConnection(null, null);
     }

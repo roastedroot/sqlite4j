@@ -93,21 +93,28 @@ public class FastDatePrinter implements DatePrinter, Serializable {
 
     /** FULL locale dependent date or time style. */
     public static final int FULL = DateFormat.FULL;
+
     /** LONG locale dependent date or time style. */
     public static final int LONG = DateFormat.LONG;
+
     /** MEDIUM locale dependent date or time style. */
     public static final int MEDIUM = DateFormat.MEDIUM;
+
     /** SHORT locale dependent date or time style. */
     public static final int SHORT = DateFormat.SHORT;
 
     /** The pattern. */
     private final String mPattern;
+
     /** The time zone. */
     private final TimeZone mTimeZone;
+
     /** The locale. */
     private final Locale mLocale;
+
     /** The parsed rules. */
     private transient Rule[] mRules;
+
     /** The estimated maximum length. */
     private transient int mMaxLengthEstimate;
 
@@ -942,6 +949,7 @@ public class FastDatePrinter implements DatePrinter, Serializable {
 
     private static final ConcurrentMap<TimeZoneDisplayKey, String> cTimeZoneDisplayCache =
             new ConcurrentHashMap<TimeZoneDisplayKey, String>(7);
+
     /**
      * Gets the time zone display name, using a cache for performance.
      *

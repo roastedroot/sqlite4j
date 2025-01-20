@@ -137,7 +137,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_array(1,null,'3',json('[4,5]'),json('{\"six\":7.7}'))");
+                                "select"
+                                    + " json_array(1,null,'3',json('[4,5]'),json('{\"six\":7.7}'))");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo("[1,null,\"3\",[4,5],{\"six\":7.7}]");
     }
@@ -248,7 +249,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_extract('{\"a\":2,\"c\":[4,5,{\"f\":7}]}', '$.c[2].f')");
+                                "select json_extract('{\"a\":2,\"c\":[4,5,{\"f\":7}]}',"
+                                        + " '$.c[2].f')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(7);
     }
@@ -284,7 +286,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_extract('{\"a\":2,\"c\":[4,5,{\"f\":7}]}', '$.x', '$.a')");
+                                "select json_extract('{\"a\":2,\"c\":[4,5,{\"f\":7}]}', '$.x',"
+                                        + " '$.a')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo("[null,2]");
     }
@@ -507,7 +510,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[0]')");
+                                "select"
+                                    + " json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[0]')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo("integer");
     }
@@ -519,7 +523,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[1]')");
+                                "select"
+                                    + " json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[1]')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo("real");
     }
@@ -531,7 +536,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[2]')");
+                                "select"
+                                    + " json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[2]')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo("true");
     }
@@ -543,7 +549,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[3]')");
+                                "select"
+                                    + " json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[3]')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo("false");
     }
@@ -555,7 +562,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[4]')");
+                                "select"
+                                    + " json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[4]')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo("null");
     }
@@ -567,7 +575,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[5]')");
+                                "select"
+                                    + " json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[5]')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo("text");
     }
@@ -579,7 +588,8 @@ public class JSON1Test {
         ResultSet rs =
                 conn.createStatement()
                         .executeQuery(
-                                "select json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[6]')");
+                                "select"
+                                    + " json_type('{\"a\":[2,3.5,true,false,null,\"x\"]}','$.a[6]')");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getString(1)).isEqualTo(null);
     }
@@ -610,16 +620,20 @@ public class JSON1Test {
 
         conn.createStatement()
                 .execute(
-                        "insert into user values('james', json_array('704-100-0000','604-100-0000'))");
+                        "insert into user values('james',"
+                                + " json_array('704-100-0000','604-100-0000'))");
         conn.createStatement()
                 .execute(
-                        "insert into user values('sally', json_array('604-200-0000','404-200-0000'))");
+                        "insert into user values('sally',"
+                                + " json_array('604-200-0000','404-200-0000'))");
         conn.createStatement()
                 .execute(
-                        "insert into user values('frank', json_array('704-200-0000','604-200-0000'))");
+                        "insert into user values('frank',"
+                                + " json_array('704-200-0000','604-200-0000'))");
         conn.createStatement()
                 .execute(
-                        "insert into user values('harry', json_array('504-200-0000','304-200-0000'))");
+                        "insert into user values('harry',"
+                                + " json_array('504-200-0000','304-200-0000'))");
 
         String q =
                 "SELECT DISTINCT user.name"
@@ -642,12 +656,14 @@ public class JSON1Test {
 
         conn.createStatement()
                 .execute(
-                        "insert into user values('james', json_array('704-100-0000','604-100-0000'))");
+                        "insert into user values('james',"
+                                + " json_array('704-100-0000','604-100-0000'))");
         conn.createStatement().execute("insert into user values('sally', '604-200-0000')");
         conn.createStatement().execute("insert into user values('frank', '704-200-0000')");
         conn.createStatement()
                 .execute(
-                        "insert into user values('harry', json_array('504-200-0000','304-200-0000'))");
+                        "insert into user values('harry',"
+                                + " json_array('504-200-0000','304-200-0000'))");
 
         String q =
                 "SELECT name FROM user WHERE phone LIKE '705-%'"
