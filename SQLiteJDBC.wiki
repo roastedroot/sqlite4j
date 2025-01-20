@@ -103,7 +103,7 @@ If you want to use the native library for your OS, [#BuildfromSource build the s
 == Usage ==
 
  1. Download sqlite-jdbc-(VERSION).jar from [http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/], then append this jar file into your classpath. 
- 1. load the JDBC driver org.sqlite.JDBC from your code. (see the example below)
+ 1. load the JDBC driver com.github.andreaTP.sqlite.wasm.JDBC from your code. (see the example below)
 
  * Usage Example (Assuming sqlite-jdbc-(VERSION).jar is placed in the current directory)
 {{{
@@ -131,7 +131,7 @@ public class Sample
   public static void main(String[] args) throws ClassNotFoundException
   {
     // load the sqlite-JDBC driver using the current class loader
-    Class.forName("org.sqlite.JDBC");
+    Class.forName("com.github.andreaTP.sqlite.wasm.JDBC");
     
     Connection connection = null;
     try
@@ -201,7 +201,7 @@ Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:");
 == How to test the running mode: Native or Pure-Java Version? ==
 {{{
 #!java
-import org.sqlite.SQLiteJDBCLoader;
+import com.github.andreaTP.sqlite.wasm.SQLiteJDBCLoader;
 
 // in your function ...
 void test()
@@ -222,7 +222,7 @@ In some OS (e.g., old Linux kernel), loading native library causes JVM crashes. 
 Or, set this System property before loading the JDBC driver:
 {{{
   System.setProperty("sqlite.purejava", "true");
-  Class.forName("org.sqlite.JDBC");
+  Class.forName("com.github.andreaTP.sqlite.wasm.JDBC");
 }}}
 
 In this mode, sqlite-jdbc never uses native SQLite libraries.
@@ -254,7 +254,7 @@ Another sample code is [http://code.google.com/p/xerial/source/browse/src/test/j
 
 == How does SQLiteJDBC work? ==
 
-Our SQLite JDBC driver package (i.e., sqlite-jdbc-(VERSION).jar) contains three types of native SQLite libraries (sqlite-jdbc.dll, sqlite-jdbc.dylib, sqlite-jdbc.so), each of them is compiled for Windows, Mac OS and Linux. An appropriate native library file is automatically extracted into your OS's temporary folder, when your program loads "org.sqlite.JDBC" driver.
+Our SQLite JDBC driver package (i.e., sqlite-jdbc-(VERSION).jar) contains three types of native SQLite libraries (sqlite-jdbc.dll, sqlite-jdbc.dylib, sqlite-jdbc.so), each of them is compiled for Windows, Mac OS and Linux. An appropriate native library file is automatically extracted into your OS's temporary folder, when your program loads "com.github.andreaTP.sqlite.wasm.JDBC" driver.
 
 == Source Codes ==
  * Mercurial Repository: http://code.google.com/p/xerial/source/checkout?repo=sqlite 
