@@ -28,7 +28,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
 import java.util.TimeZone;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -343,7 +342,7 @@ public class QueryTest {
     @Disabled("TODO: WASM: likely there is a leak, doublecheck")
     @Test
     public void github720_Incorrect_Update_Count_After_Deleting_Many_Rows() throws Exception {
-         int size = 50000;
+        int size = 50000;
         Connection conn = getConnection();
         conn.createStatement().execute("drop table if exists test");
         conn.createStatement().execute("create table test (id int not null)");

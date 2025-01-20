@@ -28,6 +28,7 @@ public class WasmDBExports {
     private final ExportFunction columnType;
     private final ExportFunction columnName;
     private final ExportFunction columnText;
+    private final ExportFunction columnInt;
     private final ExportFunction columnDouble;
     private final ExportFunction columnLong;
     private final ExportFunction columnBlob;
@@ -38,6 +39,7 @@ public class WasmDBExports {
     private final ExportFunction bindText;
     private final ExportFunction limit;
     private final ExportFunction errmsg;
+    private final ExportFunction extendedErrcode;
 
     public WasmDBExports(Instance instance) {
         this.instance = instance;
@@ -57,6 +59,7 @@ public class WasmDBExports {
         this.columnType = instance.exports().function("sqlite3_column_type");
         this.columnName = instance.exports().function("sqlite3_column_name");
         this.columnText = instance.exports().function("sqlite3_column_text");
+        this.columnInt = instance.exports().function("sqlite3_column_int");
         this.columnDouble = instance.exports().function("sqlite3_column_double");
         this.columnLong = instance.exports().function("sqlite3_column_int64");
         this.columnBlob = instance.exports().function("sqlite3_column_blob");
@@ -67,6 +70,7 @@ public class WasmDBExports {
         this.bindText = instance.exports().function("sqlite3_bind_text");
         this.limit = instance.exports().function("sqlite3_limit");
         this.errmsg = instance.exports().function("sqlite3_errmsg");
+        this.extendedErrcode = instance.exports().function("sqlite3_extended_errcode");
     }
 
     public int malloc(int size) {
@@ -112,6 +116,10 @@ public class WasmDBExports {
     //    char **errmsg                              /* Error msg written here */
     public int exec(int dbPtr, int sqlPtr, int callback, int callbackArg0, int errPtr) {
         return (int) exec.apply(dbPtr, sqlPtr, callback, callbackArg0, errPtr)[0];
+    }
+
+    public int extendedErrorcode(int dbPtr) {
+        return (int) extendedErrcode.apply(dbPtr)[0];
     }
 
     public int finalize(int stmtPtr) {
@@ -164,6 +172,10 @@ public class WasmDBExports {
 
     public int columnText(int stmtPtr, int col) {
         return (int) columnText.apply(stmtPtr, col)[0];
+    }
+
+    public int columnInt(int stmtPtr, int col) {
+        return (int) columnInt.apply(stmtPtr, col)[0];
     }
 
     public double columnDouble(int stmtPtr, int col) {

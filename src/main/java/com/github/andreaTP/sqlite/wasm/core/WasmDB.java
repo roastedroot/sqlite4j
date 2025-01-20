@@ -14,8 +14,20 @@ import com.github.andreaTP.sqlite.wasm.SQLiteModule;
 import com.github.andreaTP.sqlite.wasm.util.Logger;
 import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
 import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.text.MessageFormat;
+
+import static java.nio.file.Files.copy;
 
 public class WasmDB extends DB {
     private static final Logger logger = LoggerFactory.getLogger(WasmDB.class);
@@ -26,6 +38,10 @@ public class WasmDB extends DB {
     private final WasiPreview1 wasiPreview1;
     private final WasmDBExports exports;
 
+    // TODO: implement proper cleanup of resources
+    private final FileSystem fs;
+    private final String dbFileName;
+
     /** SQLite connection handle. */
     private int dbPtrPtr = 0;
 
@@ -33,17 +49,44 @@ public class WasmDB extends DB {
 
     public WasmDB(String url, String fileName, SQLiteConfig config) throws SQLException {
         super(url, fileName, config);
-        WasiOptions wasiOpts = WasiOptions.builder().inheritSystem().build();
-        this.wasiPreview1 = WasiPreview1.builder().withOptions(wasiOpts).build();
-        this.instance =
-                Instance.builder(SQLiteModule.load())
-                        .withMachineFactory(SQLiteModule::create)
-                        .withImportValues(
-                                ImportValues.builder()
-                                        .addFunction(wasiPreview1.toHostFunctions())
-                                        .build())
-                        .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
-                        .build();
+        if (!fileName.equals(":memory:")) {
+            this.fs = Jimfs.newFileSystem(Configuration.unix().toBuilder().setAttributeViews("unix").build());
+            Path target = fs.getPath("tmp");
+            try {
+                java.nio.file.Files.createDirectory(target);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create directory on the in-memory fs", e);
+            }
+            this.dbFileName = Path.of(fileName).toFile().getName();
+
+            WasiOptions wasiOpts = WasiOptions.builder().inheritSystem().withDirectory(target.toString(), target).build();
+            this.wasiPreview1 = WasiPreview1.builder().withOptions(wasiOpts).build();
+            this.instance =
+                    Instance.builder(SQLiteModule.load())
+                            .withMachineFactory(SQLiteModule::create)
+                            .withImportValues(
+                                    ImportValues.builder()
+                                            .addFunction(wasiPreview1.toHostFunctions())
+                                            .build())
+                            .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
+                            .build();
+        } else {
+            this.fs = null;
+            this.dbFileName = null;
+
+            WasiOptions wasiOpts = WasiOptions.builder().inheritSystem().build();
+            this.wasiPreview1 = WasiPreview1.builder().withOptions(wasiOpts).build();
+            this.instance =
+                    Instance.builder(SQLiteModule.load())
+                            .withMachineFactory(SQLiteModule::create)
+                            .withImportValues(
+                                    ImportValues.builder()
+                                            .addFunction(wasiPreview1.toHostFunctions())
+                                            .build())
+                            .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
+                            .build();
+        }
+
         this.exports = new WasmDBExports(instance);
     }
 
@@ -57,21 +100,30 @@ public class WasmDB extends DB {
 
     @Override
     protected void _open(String filename, int openFlags) throws SQLException {
-        if (!filename.equals(":memory:")) {
-            // TODO: fixme!
-            throw new RuntimeException("opening a db from file is not yet supported.");
+        if (!filename.equals(":memory:") && !filename.isEmpty()) {
+            filename = fs.getPath("tmp").resolve(this.dbFileName).toString();
+            if (new File(filename).exists()) {
+                try (InputStream is = new FileInputStream(filename)) {
+                    java.nio.file.Files.copy(is, fs.getPath("tmp").resolve(this.dbFileName), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new SQLException("Failed to map to memory the file: " + filename);
+                }
+            }
         }
-
         this.dbPtrPtr = exports.malloc(PTR_SIZE);
         int dbNamePtr = exports.allocCString(filename);
 
         int res = exports.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
+        this.dbPtr = instance.memory().readInt(this.dbPtrPtr);
         if (res != SQLITE_OK) {
-            throw new SQLException("Failed to open database " + filename + " error code: " + res);
+            int errCode = exports.extendedErrorcode(dbPtr);
+            String errmsg = errmsg();
+            exports.close(dbPtr);
+            throw new SQLException("Failed to open database " + filename + ", error code: " + errCode + ", error message: " + errmsg);
         }
         exports.free(dbNamePtr);
 
-        this.dbPtr = instance.memory().readInt(this.dbPtrPtr);
+
     }
 
     @Override
@@ -109,7 +161,8 @@ public class WasmDB extends DB {
         int status = exports.exec(dbPtr(), sqlBytesPtr, 0, 0, 0);
         exports.free(sqlBytesPtr);
         if (status != SQLITE_OK) {
-            throw new SQLException("Failed to exec " + sql + " returned error code: " + status);
+            String errmsg = errmsg();
+            throw new SQLException("Failed to exec " + sql + ", returned error code: " + status + ", error message: " + errmsg);
         }
 
         return status;
@@ -169,6 +222,13 @@ public class WasmDB extends DB {
     protected void _close() throws SQLException {
         exports.close(dbPtr());
         exports.free(dbPtrPtr);
+        if (this.fs != null) {
+            try {
+                this.fs.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
@@ -243,8 +303,8 @@ public class WasmDB extends DB {
     }
 
     @Override
-    public int column_int(long stmt, int col) throws SQLException {
-        throw new RuntimeException("column_int not implemented in WasmDB");
+    public int column_int(long stmtPtrPtr, int col) throws SQLException {
+        return exports.columnInt(exports.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
