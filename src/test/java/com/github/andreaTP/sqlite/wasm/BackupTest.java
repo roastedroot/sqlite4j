@@ -12,6 +12,7 @@ package com.github.andreaTP.sqlite.wasm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import com.github.andreaTP.sqlite.wasm.core.DB;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
@@ -19,7 +20,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import com.github.andreaTP.sqlite.wasm.core.DB;
 
 public class BackupTest {
     @TempDir File tempDir;

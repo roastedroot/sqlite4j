@@ -1,11 +1,11 @@
 package com.github.andreaTP.sqlite.wasm.jdbc4;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3DatabaseMetaData;
 
 public class JDBC4DatabaseMetaData extends JDBC3DatabaseMetaData {
     public JDBC4DatabaseMetaData(SQLiteConnection conn) {

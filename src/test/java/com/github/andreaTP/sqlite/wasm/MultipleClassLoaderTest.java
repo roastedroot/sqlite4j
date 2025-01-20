@@ -121,7 +121,9 @@ public class MultipleClassLoaderTest {
                             URLClassLoader classLoader =
                                     new URLClassLoader(
                                             jarUrl, ClassLoader.getSystemClassLoader().getParent());
-                            Class<?> clazz = classLoader.loadClass("com.github.andreaTP.sqlite.wasm.SQLiteJDBCLoader");
+                            Class<?> clazz =
+                                    classLoader.loadClass(
+                                            "com.github.andreaTP.sqlite.wasm.SQLiteJDBCLoader");
                             Method initMethod = clazz.getDeclaredMethod("initialize");
                             initMethod.invoke(null);
                             classLoader.close();

@@ -2,6 +2,9 @@ package com.github.andreaTP.sqlite.wasm;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConfig.JournalMode;
+import com.github.andreaTP.sqlite.wasm.SQLiteConfig.Pragma;
+import com.github.andreaTP.sqlite.wasm.SQLiteConfig.SynchronousMode;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -15,9 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import com.github.andreaTP.sqlite.wasm.SQLiteConfig.JournalMode;
-import com.github.andreaTP.sqlite.wasm.SQLiteConfig.Pragma;
-import com.github.andreaTP.sqlite.wasm.SQLiteConfig.SynchronousMode;
 
 /**
  * These tests check whether access to files is working correctly and some Connection.close() cases.

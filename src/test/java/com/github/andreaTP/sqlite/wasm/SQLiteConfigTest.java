@@ -2,11 +2,11 @@ package com.github.andreaTP.sqlite.wasm;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConfig.Pragma;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import com.github.andreaTP.sqlite.wasm.SQLiteConfig.Pragma;
 
 public class SQLiteConfigTest {
 

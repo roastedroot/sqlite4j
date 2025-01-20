@@ -1,9 +1,9 @@
 package com.github.andreaTP.sqlite.wasm.jdbc4;
 
-import java.sql.SQLException;
-import java.sql.Statement;
 import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
 import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Statement;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class JDBC4Statement extends JDBC3Statement implements Statement {
     public JDBC4Statement(SQLiteConnection conn) {

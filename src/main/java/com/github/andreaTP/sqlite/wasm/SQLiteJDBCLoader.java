@@ -24,6 +24,11 @@
 // --------------------------------------
 package com.github.andreaTP.sqlite.wasm;
 
+import com.github.andreaTP.sqlite.wasm.util.LibraryLoaderUtil;
+import com.github.andreaTP.sqlite.wasm.util.Logger;
+import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
+import com.github.andreaTP.sqlite.wasm.util.OSInfo;
+import com.github.andreaTP.sqlite.wasm.util.StringUtils;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
@@ -40,12 +45,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.stream.Stream;
-
-import com.github.andreaTP.sqlite.wasm.util.LibraryLoaderUtil;
-import com.github.andreaTP.sqlite.wasm.util.Logger;
-import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
-import com.github.andreaTP.sqlite.wasm.util.OSInfo;
-import com.github.andreaTP.sqlite.wasm.util.StringUtils;
 
 /**
  * Set the system properties, org.sqlite.lib.path, org.sqlite.lib.name, appropriately so that the

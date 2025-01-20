@@ -13,10 +13,10 @@
  *--------------------------------------------------------------------------*/
 package com.github.andreaTP.sqlite.wasm.javax;
 
-import java.sql.SQLException;
-import javax.sql.PooledConnection;
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
 import com.github.andreaTP.sqlite.wasm.SQLiteDataSource;
+import java.sql.SQLException;
+import javax.sql.PooledConnection;
 
 public class SQLiteConnectionPoolDataSource extends SQLiteDataSource
         implements javax.sql.ConnectionPoolDataSource {

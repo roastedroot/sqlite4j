@@ -15,12 +15,6 @@
  */
 package com.github.andreaTP.sqlite.wasm.core;
 
-import java.sql.BatchUpdateException;
-import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import com.github.andreaTP.sqlite.wasm.BusyHandler;
 import com.github.andreaTP.sqlite.wasm.Collation;
 import com.github.andreaTP.sqlite.wasm.Function;
@@ -30,6 +24,12 @@ import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
 import com.github.andreaTP.sqlite.wasm.SQLiteErrorCode;
 import com.github.andreaTP.sqlite.wasm.SQLiteException;
 import com.github.andreaTP.sqlite.wasm.SQLiteUpdateListener;
+import java.sql.BatchUpdateException;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /*
  * This class is the interface to SQLite. It provides some helper functions

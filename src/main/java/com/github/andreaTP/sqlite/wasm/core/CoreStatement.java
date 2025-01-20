@@ -15,15 +15,14 @@
  */
 package com.github.andreaTP.sqlite.wasm.core;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.SQLiteConnectionConfig;
+import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Connection;
+import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4ResultSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.regex.Pattern;
-
-import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Connection;
-import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4ResultSet;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnectionConfig;
 
 public abstract class CoreStatement implements Codes {
     public final SQLiteConnection conn;

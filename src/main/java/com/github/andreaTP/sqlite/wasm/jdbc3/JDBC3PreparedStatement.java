@@ -1,5 +1,9 @@
 package com.github.andreaTP.sqlite.wasm.jdbc3;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.core.CorePreparedStatement;
+import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
+import com.github.andreaTP.sqlite.wasm.core.DB;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -22,11 +26,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Calendar;
-
-import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.core.CorePreparedStatement;
-import com.github.andreaTP.sqlite.wasm.core.DB;
 
 public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
 

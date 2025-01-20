@@ -13,6 +13,11 @@
  *--------------------------------------------------------------------------*/
 package com.github.andreaTP.sqlite.wasm.javax;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.core.DB;
+import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4PooledConnection;
+import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4PreparedStatement;
+import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4Statement;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -40,12 +45,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.ConnectionEvent;
 import javax.sql.ConnectionEventListener;
-
-import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4PooledConnection;
-import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4PreparedStatement;
-import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4Statement;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.core.DB;
 
 public class SQLitePooledConnection extends JDBC4PooledConnection {
 

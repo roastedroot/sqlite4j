@@ -1,5 +1,9 @@
 package com.github.andreaTP.sqlite.wasm.jdbc3;
 
+import com.github.andreaTP.sqlite.wasm.core.CoreResultSet;
+import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
+import com.github.andreaTP.sqlite.wasm.core.DB;
+import com.github.andreaTP.sqlite.wasm.date.FastDateFormat;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Reader;
@@ -20,10 +24,6 @@ import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.github.andreaTP.sqlite.wasm.core.CoreResultSet;
-import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
-import com.github.andreaTP.sqlite.wasm.core.DB;
-import com.github.andreaTP.sqlite.wasm.date.FastDateFormat;
 
 public abstract class JDBC3ResultSet extends CoreResultSet {
     // ResultSet Functions //////////////////////////////////////////

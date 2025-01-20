@@ -20,7 +20,8 @@
  *
  * <p>The time package contains some basic utilities for manipulating time (a delorean, police box
  * and grandfather clock?). These include a org.apache.commons.lang3.time.StopWatch for simple
- * performance measurements and an optimised {@link com.github.andreaTP.sqlite.wasm.date.FastDateFormat} class.
+ * performance measurements and an optimised {@link
+ * com.github.andreaTP.sqlite.wasm.date.FastDateFormat} class.
  *
  * <p>New in Lang 2.1 is the org.apache.commons.lang3.time.DurationFormatUtils class, which provides
  * various methods for formatting durations.

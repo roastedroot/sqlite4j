@@ -16,17 +16,16 @@
 
 package com.github.andreaTP.sqlite.wasm.core;
 
-import java.sql.Date;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Calendar;
-
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.SQLiteConnectionConfig;
 import com.github.andreaTP.sqlite.wasm.date.FastDateFormat;
 import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Connection;
 import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Statement;
 import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4Statement;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnectionConfig;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Calendar;
 
 public abstract class CorePreparedStatement extends JDBC4Statement {
     protected int columnCount;

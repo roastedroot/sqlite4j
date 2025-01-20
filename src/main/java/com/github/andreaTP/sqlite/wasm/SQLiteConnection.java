@@ -1,5 +1,10 @@
 package com.github.andreaTP.sqlite.wasm;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConfig.TransactionMode;
+import com.github.andreaTP.sqlite.wasm.core.CoreDatabaseMetaData;
+import com.github.andreaTP.sqlite.wasm.core.DB;
+import com.github.andreaTP.sqlite.wasm.core.WasmDB;
+import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4DatabaseMetaData;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,12 +21,6 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-
-import com.github.andreaTP.sqlite.wasm.core.CoreDatabaseMetaData;
-import com.github.andreaTP.sqlite.wasm.core.DB;
-import com.github.andreaTP.sqlite.wasm.core.WasmDB;
-import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4DatabaseMetaData;
-import com.github.andreaTP.sqlite.wasm.SQLiteConfig.TransactionMode;
 
 /** */
 public abstract class SQLiteConnection implements Connection {

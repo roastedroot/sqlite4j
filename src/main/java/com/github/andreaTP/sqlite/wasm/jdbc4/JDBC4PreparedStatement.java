@@ -1,5 +1,7 @@
 package com.github.andreaTP.sqlite.wasm.jdbc4;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3PreparedStatement;
 import java.io.InputStream;
 import java.io.Reader;
 import java.sql.NClob;
@@ -10,8 +12,6 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLXML;
 import java.util.Arrays;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3PreparedStatement;
 
 public class JDBC4PreparedStatement extends JDBC3PreparedStatement
         implements PreparedStatement, ParameterMetaData {

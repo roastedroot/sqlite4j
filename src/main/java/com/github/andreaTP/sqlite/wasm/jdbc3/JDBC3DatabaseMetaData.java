@@ -1,5 +1,13 @@
 package com.github.andreaTP.sqlite.wasm.jdbc3;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.core.CoreDatabaseMetaData;
+import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
+import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3DatabaseMetaData.ImportedKeyFinder.ForeignKey;
+import com.github.andreaTP.sqlite.wasm.util.Logger;
+import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
+import com.github.andreaTP.sqlite.wasm.util.QueryUtils;
+import com.github.andreaTP.sqlite.wasm.util.StringUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -21,14 +29,6 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.core.CoreDatabaseMetaData;
-import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
-import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3DatabaseMetaData.ImportedKeyFinder.ForeignKey;
-import com.github.andreaTP.sqlite.wasm.util.Logger;
-import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
-import com.github.andreaTP.sqlite.wasm.util.QueryUtils;
-import com.github.andreaTP.sqlite.wasm.util.StringUtils;
 
 public abstract class JDBC3DatabaseMetaData extends CoreDatabaseMetaData {
 

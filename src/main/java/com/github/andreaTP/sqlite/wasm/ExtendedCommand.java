@@ -9,11 +9,10 @@
 // --------------------------------------
 package com.github.andreaTP.sqlite.wasm;
 
+import com.github.andreaTP.sqlite.wasm.core.DB;
 import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.github.andreaTP.sqlite.wasm.core.DB;
 
 /**
  * parsing SQLite specific extension of SQL command

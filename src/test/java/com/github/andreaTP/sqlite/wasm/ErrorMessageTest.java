@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import com.github.andreaTP.sqlite.wasm.core.DB;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
@@ -13,7 +14,6 @@ import java.sql.Statement;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.junit.jupiter.api.io.TempDir;
-import com.github.andreaTP.sqlite.wasm.core.DB;
 
 @DisabledInNativeImage // assertj Assumptions do not work in native-image tests
 public class ErrorMessageTest {

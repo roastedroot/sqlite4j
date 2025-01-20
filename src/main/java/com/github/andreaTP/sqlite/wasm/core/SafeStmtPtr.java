@@ -11,7 +11,7 @@ public class SafeStmtPtr {
     // deadlocking by locking the DB. All calls with the raw pointer are synchronized with the DB
     // anyways, so making a separate lock would be pointless
     private final DB db;
-    private final long ptr;
+    private final int ptr;
 
     private volatile boolean closed = false;
     // to return on subsequent calls to close() after this ptr has been closed
@@ -27,7 +27,7 @@ public class SafeStmtPtr {
      *     executed to avoid deadlocks
      * @param ptr the raw pointer
      */
-    public SafeStmtPtr(DB db, long ptr) {
+    public SafeStmtPtr(DB db, int ptr) {
         this.db = db;
         this.ptr = ptr;
     }

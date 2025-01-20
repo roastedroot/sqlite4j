@@ -3,6 +3,7 @@ package com.github.andreaTP.sqlite.wasm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConfig.TransactionMode;
 import java.io.File;
 import java.sql.*;
 import java.util.HashSet;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import com.github.andreaTP.sqlite.wasm.SQLiteConfig.TransactionMode;
 
 /**
  * These tests assume that Statements and PreparedStatements are working as per normal and test the

@@ -15,18 +15,17 @@
  */
 package com.github.andreaTP.sqlite.wasm;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
 import com.github.andreaTP.sqlite.wasm.core.Codes;
 import com.github.andreaTP.sqlite.wasm.core.DB;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * Provides an interface for creating SQLite user-defined functions.
  *
- * <p>A subclass of <tt>com.github.andreaTP.sqlite.wasm.Function</tt> can be registered with <tt>Function.create()</tt>
- * and called by the name it was given. All functions must implement <tt>xFunc()</tt>, which is
- * called when SQLite runs the custom function. E.g.
+ * <p>A subclass of <tt>com.github.andreaTP.sqlite.wasm.Function</tt> can be registered with
+ * <tt>Function.create()</tt> and called by the name it was given. All functions must implement
+ * <tt>xFunc()</tt>, which is called when SQLite runs the custom function. E.g.
  *
  * <pre>
  *      Class.forName("com.github.andreaTP.sqlite.wasm.JDBC");

@@ -16,12 +16,11 @@
 
 package com.github.andreaTP.sqlite.wasm;
 
-import java.sql.*;
-import java.util.Properties;
-
 import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4Connection;
 import com.github.andreaTP.sqlite.wasm.util.Logger;
 import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
+import java.sql.*;
+import java.util.Properties;
 
 public class JDBC implements Driver {
     private static final Logger logger = LoggerFactory.getLogger(JDBC.class);

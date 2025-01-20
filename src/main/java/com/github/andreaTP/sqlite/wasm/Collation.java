@@ -15,18 +15,18 @@
  */
 package com.github.andreaTP.sqlite.wasm;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
 import com.github.andreaTP.sqlite.wasm.core.Codes;
 import com.github.andreaTP.sqlite.wasm.core.DB;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * Provides an interface for creating SQLite user-defined collations.
  *
- * <p>A subclass of <tt>com.github.andreaTP.sqlite.wasm.Collation</tt> can be registered with <tt>Collation.create()</tt>
- * and called by the name it was given. All collations must implement <tt>xCompare(String,
- * String)</tt>, which is called when SQLite compares two strings using the custom collation. Eg.
+ * <p>A subclass of <tt>com.github.andreaTP.sqlite.wasm.Collation</tt> can be registered with
+ * <tt>Collation.create()</tt> and called by the name it was given. All collations must implement
+ * <tt>xCompare(String, String)</tt>, which is called when SQLite compares two strings using the
+ * custom collation. Eg.
  *
  * <pre>
  *      Class.forName("com.github.andreaTP.sqlite.wasm.JDBC");

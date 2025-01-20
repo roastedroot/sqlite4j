@@ -16,12 +16,12 @@
 
 package com.github.andreaTP.sqlite.wasm.core;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
 
 public abstract class CoreDatabaseMetaData implements DatabaseMetaData {
     protected SQLiteConnection conn;

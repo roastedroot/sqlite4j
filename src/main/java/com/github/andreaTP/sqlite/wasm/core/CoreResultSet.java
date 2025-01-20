@@ -15,11 +15,11 @@
  */
 package com.github.andreaTP.sqlite.wasm.core;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConnectionConfig;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnectionConfig;
 
 /** Implements a JDBC ResultSet. */
 public abstract class CoreResultSet implements Codes {

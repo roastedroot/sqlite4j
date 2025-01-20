@@ -16,6 +16,7 @@ package com.github.andreaTP.sqlite.wasm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.andreaTP.sqlite.wasm.javax.SQLiteConnectionPoolDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -23,7 +24,6 @@ import javax.sql.ConnectionPoolDataSource;
 import javax.sql.PooledConnection;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import com.github.andreaTP.sqlite.wasm.javax.SQLiteConnectionPoolDataSource;
 
 public class SQLiteConnectionPoolDataSourceTest {
 

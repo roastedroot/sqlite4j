@@ -1,5 +1,9 @@
 package com.github.andreaTP.sqlite.wasm.jdbc3;
 
+import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
+import com.github.andreaTP.sqlite.wasm.SQLiteConfig.TransactionMode;
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.SQLiteOpenMode;
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -13,10 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
-import com.github.andreaTP.sqlite.wasm.SQLiteConfig.TransactionMode;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.SQLiteOpenMode;
 
 public abstract class JDBC3Connection extends SQLiteConnection {
     private final AtomicInteger savePoint = new AtomicInteger(0);

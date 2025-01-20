@@ -3,6 +3,8 @@ package com.github.andreaTP.sqlite.wasm;
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.data.Offset.offset;
 
+import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Statement;
+import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4Statement;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.sql.BatchUpdateException;
@@ -20,8 +22,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Statement;
-import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4Statement;
 
 /** These tests are designed to stress Statements on memory databases. */
 public class StatementTest {

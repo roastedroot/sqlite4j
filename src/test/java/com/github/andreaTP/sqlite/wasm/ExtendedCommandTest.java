@@ -11,15 +11,15 @@ package com.github.andreaTP.sqlite.wasm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.andreaTP.sqlite.wasm.ExtendedCommand.BackupCommand;
+import com.github.andreaTP.sqlite.wasm.ExtendedCommand.RestoreCommand;
+import com.github.andreaTP.sqlite.wasm.ExtendedCommand.SQLExtension;
 import java.sql.SQLException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import com.github.andreaTP.sqlite.wasm.ExtendedCommand.BackupCommand;
-import com.github.andreaTP.sqlite.wasm.ExtendedCommand.RestoreCommand;
-import com.github.andreaTP.sqlite.wasm.ExtendedCommand.SQLExtension;
 
 public class ExtendedCommandTest {
 

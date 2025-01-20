@@ -4,58 +4,23 @@ import com.dylibso.chicory.runtime.ImportValues;
 import com.dylibso.chicory.runtime.Instance;
 import com.dylibso.chicory.wasi.WasiOptions;
 import com.dylibso.chicory.wasi.WasiPreview1;
-import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
-import java.text.MessageFormat;
-
-import com.github.andreaTP.sqlite.wasm.wasm.SQLiteModule;
-import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
+import com.dylibso.chicory.wasm.types.MemoryLimits;
 import com.github.andreaTP.sqlite.wasm.BusyHandler;
 import com.github.andreaTP.sqlite.wasm.Collation;
 import com.github.andreaTP.sqlite.wasm.Function;
 import com.github.andreaTP.sqlite.wasm.ProgressHandler;
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
+import com.github.andreaTP.sqlite.wasm.SQLiteModule;
 import com.github.andreaTP.sqlite.wasm.util.Logger;
 import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
+import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
+import java.sql.SQLException;
+import java.text.MessageFormat;
 
 public class WasmDB extends DB {
     private static final Logger logger = LoggerFactory.getLogger(WasmDB.class);
 
     public static final int PTR_SIZE = 4;
-
-    private static final int SQLITE_OK = 0; /* Successful result */
-    private static final int SQLITE_ERROR = 1; /* Generic error */
-    private static final int SQLITE_INTERNAL = 2; /* Internal logic error in SQLite */
-    private static final int SQLITE_PERM = 3; /* Access permission denied */
-    private static final int SQLITE_ABORT = 4; /* Callback routine requested an abort */
-    private static final int SQLITE_BUSY = 5; /* The database file is locked */
-    private static final int SQLITE_LOCKED = 6; /* A table in the database is locked */
-    private static final int SQLITE_NOMEM = 7; /* A malloc() failed */
-    private static final int SQLITE_READONLY = 8; /* Attempt to write a readonly database */
-    private static final int SQLITE_INTERRUPT = 9; /* Operation terminated by sqlite3_interrupt()*/
-    private static final int SQLITE_IOERR = 10; /* Some kind of disk I/O error occurred */
-    private static final int SQLITE_CORRUPT = 11; /* The database disk image is malformed */
-    private static final int SQLITE_NOTFOUND = 12; /* Unknown opcode in sqlite3_file_control() */
-    private static final int SQLITE_FULL = 13; /* Insertion failed because database is full */
-    private static final int SQLITE_CANTOPEN = 14; /* Unable to open the database file */
-    private static final int SQLITE_PROTOCOL = 15; /* Database lock protocol error */
-    private static final int SQLITE_EMPTY = 16; /* Internal use only */
-    private static final int SQLITE_SCHEMA = 17; /* The database schema changed */
-    private static final int SQLITE_TOOBIG = 18; /* String or BLOB exceeds size limit */
-    private static final int SQLITE_CONSTRAINT = 19; /* Abort due to constraint violation */
-    private static final int SQLITE_MISMATCH = 20; /* Data type mismatch */
-    private static final int SQLITE_MISUSE = 21; /* Library used incorrectly */
-    private static final int SQLITE_NOLFS = 22; /* Uses OS features not supported on host */
-    private static final int SQLITE_AUTH = 23; /* Authorization denied */
-    private static final int SQLITE_FORMAT = 24; /* Not used */
-    private static final int SQLITE_RANGE = 25; /* 2nd parameter to sqlite3_bind out of range */
-    private static final int SQLITE_NOTADB = 26; /* File opened that is not a database file */
-    private static final int SQLITE_NOTICE = 27; /* Notifications from sqlite3_log() */
-    private static final int SQLITE_WARNING = 28; /* Warnings from sqlite3_log() */
-    private static final int SQLITE_ROW = 100; /* sqlite3_step() has another row ready */
-    private static final int SQLITE_DONE = 101; /* sqlite3_step() has finished executing */
-
-    private static final int SQLITE_TRANSIENT = -1; // ???
 
     private final Instance instance;
     private final WasiPreview1 wasiPreview1;
@@ -63,6 +28,7 @@ public class WasmDB extends DB {
 
     /** SQLite connection handle. */
     private int dbPtrPtr = 0;
+
     private int dbPtr = 0;
 
     public WasmDB(String url, String fileName, SQLiteConfig config) throws SQLException {
@@ -76,14 +42,15 @@ public class WasmDB extends DB {
                                 ImportValues.builder()
                                         .addFunction(wasiPreview1.toHostFunctions())
                                         .build())
+                        .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
                         .build();
         this.exports = new WasmDBExports(instance);
     }
 
     // safe access to the dbPointer
-    private int dbPtr() {
+    private int dbPtr() throws SQLException {
         if (this.dbPtrPtr == 0 || this.dbPtr == 0) {
-            throw new RuntimeException(new SQLException("Attempting to perform operations on a database not opened"));
+            throw new SQLException("Attempting to perform operations on a database not opened");
         }
         return this.dbPtr;
     }
@@ -99,10 +66,10 @@ public class WasmDB extends DB {
         int dbNamePtr = exports.allocCString(filename);
 
         int res = exports.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
-        exports.free(dbNamePtr);
         if (res != SQLITE_OK) {
             throw new SQLException("Failed to open database " + filename + " error code: " + res);
         }
+        exports.free(dbNamePtr);
 
         this.dbPtr = instance.memory().readInt(this.dbPtrPtr);
     }
@@ -117,34 +84,32 @@ public class WasmDB extends DB {
         int stmtPtrPtr = exports.malloc(PTR_SIZE);
         int sqlBytesPtr = exports.allocCString(sql);
 
-        exports.prepareV2(dbPtr, sqlBytesPtr, sql.length(), stmtPtrPtr, 0);
+        exports.prepareV2(dbPtr(), sqlBytesPtr, sql.length(), stmtPtrPtr, 0);
         exports.free(sqlBytesPtr);
 
-        return new SafeStmtPtr(this, stmtPtr);
+        return new SafeStmtPtr(this, stmtPtrPtr);
     }
 
     @Override
-    protected int finalize(long stmt) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3Finalize(stmtPtrPtr);
+    protected int finalize(long stmtPtrPtr) throws SQLException {
+        int result = exports.finalize(exports.ptr((int) stmtPtrPtr));
+        exports.free((int) stmtPtrPtr);
+        return result;
     }
 
     @Override
-    public int step(long stmt) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3Step(stmtPtrPtr);
+    public int step(long stmtPtrPtr) throws SQLException {
+        return exports.step(exports.ptr((int) stmtPtrPtr));
     }
 
     @Override
     public int _exec(String sql) throws SQLException {
-        String sqlBytes = new String(sql.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
-        int sqlBytesPtr = malloc(sqlBytes.length());
-        instance.memory().writeCString(sqlBytesPtr, sqlBytes);
+        int sqlBytesPtr = exports.allocCString(sql);
 
-        int status = exports.sqlite3Exec(pointer, sqlBytesPtr, 0, 0, 0);
-        free(sqlBytesPtr);
+        int status = exports.exec(dbPtr(), sqlBytesPtr, 0, 0, 0);
+        exports.free(sqlBytesPtr);
         if (status != SQLITE_OK) {
-            throw new SQLException("Failed to exec " + sql);
+            throw new SQLException("Failed to exec " + sql + " returned error code: " + status);
         }
 
         return status;
@@ -152,7 +117,7 @@ public class WasmDB extends DB {
 
     @Override
     public long changes() throws SQLException {
-        return exports.sqlite3Changes64(pointer);
+        return exports.changes(dbPtr());
     }
 
     @Override
@@ -173,7 +138,9 @@ public class WasmDB extends DB {
 
     @Override
     String errmsg() throws SQLException {
-        throw new RuntimeException("errmsg not implemented in WasmDB");
+        int errPtr = exports.errmsg(dbPtr());
+        String err = instance.memory().readCString(errPtr);
+        return err;
     }
 
     @Override
@@ -183,7 +150,7 @@ public class WasmDB extends DB {
 
     @Override
     public long total_changes() throws SQLException {
-        return exports.sqlite3TotalChanges(pointer);
+        return exports.totalChanges(dbPtr());
     }
 
     @Override
@@ -200,37 +167,33 @@ public class WasmDB extends DB {
 
     @Override
     protected void _close() throws SQLException {
-        exports.sqlite3Close(pointer);
+        exports.close(dbPtr());
+        exports.free(dbPtrPtr);
     }
 
     @Override
-    public int reset(long stmt) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3Reset(stmtPtrPtr);
+    public int reset(long stmtPtrPtr) throws SQLException {
+        return exports.reset(exports.ptr((int) stmtPtrPtr));
     }
 
     @Override
-    public int clear_bindings(long stmt) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3ClearBindings(stmtPtrPtr);
+    public int clear_bindings(long stmtPtrPtr) throws SQLException {
+        return exports.clearBindings(exports.ptr((int) stmtPtrPtr));
     }
 
     @Override
-    int bind_parameter_count(long stmt) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3BindParameterCount(stmtPtrPtr);
+    int bind_parameter_count(long stmtPtrPtr) throws SQLException {
+        return exports.bindParameterCount(exports.ptr((int) stmtPtrPtr));
     }
 
     @Override
-    public int column_count(long stmt) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3ColumnCount(stmtPtrPtr);
+    public int column_count(long stmtPtrPtr) throws SQLException {
+        return exports.columnCount(exports.ptr((int) stmtPtrPtr));
     }
 
     @Override
-    public int column_type(long stmt, int col) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3ColumnType(stmtPtrPtr, col);
+    public int column_type(long stmtPtrPtr, int col) throws SQLException {
+        return exports.columnType(exports.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
@@ -244,9 +207,8 @@ public class WasmDB extends DB {
     }
 
     @Override
-    public String column_name(long stmt, int col) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        int columnNamePtr = exports.sqlite3ColumnName(stmtPtrPtr, col);
+    public String column_name(long stmtPtrPtr, int col) throws SQLException {
+        int columnNamePtr = exports.columnName(exports.ptr((int) stmtPtrPtr), col);
         if (columnNamePtr == 0) {
             return null;
         }
@@ -254,29 +216,30 @@ public class WasmDB extends DB {
     }
 
     @Override
-    public String column_text(long stmt, int col) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        int txtPtr = exports.sqlite3ColumnText(stmtPtrPtr, col);
+    public String column_text(long stmtPtrPtr, int col) throws SQLException {
+        int txtPtr = exports.columnText(exports.ptr((int) stmtPtrPtr), col);
+        if (txtPtr == 0) {
+            return null;
+        }
+
         String result = instance.memory().readCString(txtPtr);
-        free(txtPtr);
+        exports.free(txtPtr);
         return result;
     }
 
     @Override
-    public byte[] column_blob(long stmt, int col) throws SQLException {
-        throw new RuntimeException("column_blob not implemented in WasmDB");
+    public byte[] column_blob(long stmtPtrPtr, int col) throws SQLException {
+        return exports.columnBlob(exports.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
-    public double column_double(long stmt, int col) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3ColumnDouble(stmtPtrPtr, col);
+    public double column_double(long stmtPtrPtr, int col) throws SQLException {
+        return exports.columnDouble(exports.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
-    public long column_long(long stmt, int col) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3ColumnInt64(stmtPtrPtr, col);
+    public long column_long(long stmtPtrPtr, int col) throws SQLException {
+        return exports.columnLong(exports.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
@@ -285,14 +248,13 @@ public class WasmDB extends DB {
     }
 
     @Override
-    int bind_null(long stmt, int pos) throws SQLException {
-        throw new RuntimeException("bind_null not implemented in WasmDB");
+    int bind_null(long stmtPtrPtr, int pos) throws SQLException {
+        return exports.bindNull(exports.ptr((int) stmtPtrPtr), pos);
     }
 
     @Override
-    int bind_int(long stmt, int pos, int v) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3BindInt(stmtPtrPtr, pos, v);
+    int bind_int(long stmtPtrPtr, int pos, int v) throws SQLException {
+        return exports.bindInt(exports.ptr((int) stmtPtrPtr), pos, v);
     }
 
     @Override
@@ -301,23 +263,16 @@ public class WasmDB extends DB {
     }
 
     @Override
-    int bind_double(long stmt, int pos, double v) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        return exports.sqlite3BindDouble(stmtPtrPtr, pos, v);
+    int bind_double(long stmtPtrPtr, int pos, double v) throws SQLException {
+        return exports.bindDouble(exports.ptr((int) stmtPtrPtr), pos, v);
     }
 
     @Override
-    int bind_text(long stmt, int pos, String v) throws SQLException {
-        int stmtPtrPtr = instance.memory().readInt((int) stmt);
-        // TODO: doublecheck allocation of Strings: should it be +1 byte for the terminal 0?
-        int vPtr = malloc(v.length());
-        instance.memory()
-                .writeCString(
-                        vPtr,
-                        new String(v.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
+    int bind_text(long stmtPtrPtr, int pos, String v) throws SQLException {
+        int vPtr = exports.allocCString(v);
 
-        int result = exports.sqlite3BindText(stmtPtrPtr, pos, vPtr, v.length(), SQLITE_TRANSIENT);
-        free(vPtr);
+        int result = exports.bindText(exports.ptr((int) stmtPtrPtr), pos, vPtr, v.length());
+        exports.free(vPtr);
 
         return result;
     }
@@ -450,7 +405,7 @@ public class WasmDB extends DB {
 
     @Override
     public int limit(int id, int value) throws SQLException {
-        return exports.sqlite3Limit(pointer, id, value);
+        return exports.limit(dbPtr(), id, value);
     }
 
     @Override

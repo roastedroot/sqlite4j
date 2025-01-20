@@ -1,5 +1,13 @@
 package com.github.andreaTP.sqlite.wasm.jdbc3;
 
+import com.github.andreaTP.sqlite.wasm.ExtendedCommand;
+import com.github.andreaTP.sqlite.wasm.ExtendedCommand.SQLExtension;
+import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
+import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
+import com.github.andreaTP.sqlite.wasm.core.DB;
+import com.github.andreaTP.sqlite.wasm.core.DB.ProgressObserver;
+import com.github.andreaTP.sqlite.wasm.util.Logger;
+import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -9,14 +17,6 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import com.github.andreaTP.sqlite.wasm.ExtendedCommand;
-import com.github.andreaTP.sqlite.wasm.ExtendedCommand.SQLExtension;
-import com.github.andreaTP.sqlite.wasm.SQLiteConnection;
-import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
-import com.github.andreaTP.sqlite.wasm.core.DB;
-import com.github.andreaTP.sqlite.wasm.core.DB.ProgressObserver;
-import com.github.andreaTP.sqlite.wasm.util.Logger;
-import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
 
 public abstract class JDBC3Statement extends CoreStatement {
 

@@ -1,5 +1,7 @@
 package com.github.andreaTP.sqlite.wasm.jdbc4;
 
+import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
+import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3ResultSet;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,8 +29,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Map;
-import com.github.andreaTP.sqlite.wasm.core.CoreStatement;
-import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3ResultSet;
 
 public class JDBC4ResultSet extends JDBC3ResultSet implements ResultSet, ResultSetMetaData {
 

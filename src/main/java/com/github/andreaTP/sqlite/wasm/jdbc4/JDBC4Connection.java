@@ -1,5 +1,6 @@
 package com.github.andreaTP.sqlite.wasm.jdbc4;
 
+import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Connection;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -11,7 +12,6 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLXML;
 import java.sql.Statement;
 import java.util.Properties;
-import com.github.andreaTP.sqlite.wasm.jdbc3.JDBC3Connection;
 
 public class JDBC4Connection extends JDBC3Connection {
 

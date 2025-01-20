@@ -2,12 +2,11 @@ package com.github.andreaTP.sqlite.wasm;
 
 import static com.github.andreaTP.sqlite.wasm.SQLiteConfig.DEFAULT_DATE_STRING_FORMAT;
 
+import com.github.andreaTP.sqlite.wasm.date.FastDateFormat;
 import java.sql.Connection;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Properties;
-
-import com.github.andreaTP.sqlite.wasm.date.FastDateFormat;
 
 /** Connection local configurations */
 public class SQLiteConnectionConfig implements Cloneable {
