@@ -6,6 +6,8 @@ import com.dylibso.chicory.runtime.ExportFunction;
 import com.dylibso.chicory.runtime.Instance;
 import com.dylibso.chicory.wasm.types.Value;
 
+import java.nio.charset.StandardCharsets;
+
 // Manually writing it to avoid passing through the Map lookup on every invocation
 public class WasmDBExports {
 
@@ -13,6 +15,8 @@ public class WasmDBExports {
 
     private final Instance instance;
     private final ExportFunction realloc;
+    private final ExportFunction malloc;
+    private final ExportFunction free;
     private final ExportFunction openV2;
     private final ExportFunction prepareV2;
     private final ExportFunction finalize;
@@ -44,6 +48,8 @@ public class WasmDBExports {
     public WasmDBExports(Instance instance) {
         this.instance = instance;
         this.realloc = instance.exports().function("realloc");
+        this.malloc = instance.exports().function("malloc");
+        this.free = instance.exports().function("free");
         this.openV2 = instance.exports().function("sqlite3_open_v2");
         this.prepareV2 = instance.exports().function("sqlite3_prepare_v2");
         this.finalize = instance.exports().function("sqlite3_finalize");
@@ -74,21 +80,43 @@ public class WasmDBExports {
     }
 
     public int malloc(int size) {
-        return (int) realloc.apply(0, size)[0];
+        return (int) malloc.apply(size)[0];
     }
 
-    public int free(int ptr) {
-        return (int) realloc.apply(ptr, 0)[0];
+    public void free(int ptr) {
+        free.apply(ptr);
     }
 
     public int ptr(int ptrptr) {
         return instance.memory().readInt(ptrptr);
     }
 
-    public int allocCString(String str) {
-        int strBytesPtr = malloc(str.length());
-        instance.memory().writeCString(strBytesPtr, str);
-        return strBytesPtr;
+    public static class StringPtrSize {
+        private final int ptr;
+        private final int size;
+
+        StringPtrSize(int ptr, int size) {
+            this.ptr = ptr;
+            this.size = size;
+        }
+
+        public int ptr() {
+            return ptr;
+        }
+
+        public int size() {
+            return size;
+        }
+    }
+
+    public StringPtrSize allocCString(String str) {
+        byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+        byte[] strBytes = new byte[bytes.length + 1];
+        int strBytesPtr = malloc(strBytes.length);
+        System.arraycopy(bytes, 0, strBytes, 0, bytes.length);
+        strBytes[bytes.length] = '\0';
+        instance.memory().write(strBytesPtr, strBytes);
+        return new StringPtrSize(strBytesPtr, strBytes.length);
     }
 
     //    const char *filename,   /* Database filename (UTF-8) */
@@ -172,6 +200,10 @@ public class WasmDBExports {
 
     public int columnText(int stmtPtr, int col) {
         return (int) columnText.apply(stmtPtr, col)[0];
+    }
+
+    public int columnBytes(int stmtPtr, int col) {
+        return (int) columnBytes.apply(stmtPtr, col)[0];
     }
 
     public int columnInt(int stmtPtr, int col) {

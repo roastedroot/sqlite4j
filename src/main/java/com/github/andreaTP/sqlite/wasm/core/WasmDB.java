@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -111,7 +112,7 @@ public class WasmDB extends DB {
             }
         }
         this.dbPtrPtr = exports.malloc(PTR_SIZE);
-        int dbNamePtr = exports.allocCString(filename);
+        int dbNamePtr = exports.allocCString(filename).ptr();
 
         int res = exports.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
         this.dbPtr = instance.memory().readInt(this.dbPtrPtr);
@@ -134,10 +135,10 @@ public class WasmDB extends DB {
                                 "DriverManager [{0}] [SQLite EXEC] {1}",
                                 Thread.currentThread().getName(), sql));
         int stmtPtrPtr = exports.malloc(PTR_SIZE);
-        int sqlBytesPtr = exports.allocCString(sql);
+        WasmDBExports.StringPtrSize str = exports.allocCString(sql);
 
-        exports.prepareV2(dbPtr(), sqlBytesPtr, sql.length(), stmtPtrPtr, 0);
-        exports.free(sqlBytesPtr);
+        exports.prepareV2(dbPtr(), str.ptr(), str.size(), stmtPtrPtr, 0);
+        exports.free(str.ptr());
 
         return new SafeStmtPtr(this, stmtPtrPtr);
     }
@@ -156,7 +157,7 @@ public class WasmDB extends DB {
 
     @Override
     public int _exec(String sql) throws SQLException {
-        int sqlBytesPtr = exports.allocCString(sql);
+        int sqlBytesPtr = exports.allocCString(sql).ptr();
 
         int status = exports.exec(dbPtr(), sqlBytesPtr, 0, 0, 0);
         exports.free(sqlBytesPtr);
@@ -277,10 +278,15 @@ public class WasmDB extends DB {
 
     @Override
     public String column_text(long stmtPtrPtr, int col) throws SQLException {
-        int txtPtr = exports.columnText(exports.ptr((int) stmtPtrPtr), col);
+        int stmtPtr = exports.ptr((int) stmtPtrPtr);
+        int txtPtr = exports.columnText(stmtPtr, col);
+        int txtLength = exports.columnBytes(stmtPtr, col);
         if (txtPtr == 0) {
             return null;
         }
+
+        byte[] bytes = instance.memory().readBytes(txtPtr, txtLength);
+        String x = new String(bytes, StandardCharsets.UTF_8);
 
         String result = instance.memory().readCString(txtPtr);
         exports.free(txtPtr);
@@ -329,11 +335,9 @@ public class WasmDB extends DB {
 
     @Override
     int bind_text(long stmtPtrPtr, int pos, String v) throws SQLException {
-        int vPtr = exports.allocCString(v);
-
-        int result = exports.bindText(exports.ptr((int) stmtPtrPtr), pos, vPtr, v.length());
-        exports.free(vPtr);
-
+        WasmDBExports.StringPtrSize str = exports.allocCString(v);
+        int result = exports.bindText(exports.ptr((int) stmtPtrPtr), pos, str.ptr(), str.size());
+        exports.free(str.ptr());
         return result;
     }
 
