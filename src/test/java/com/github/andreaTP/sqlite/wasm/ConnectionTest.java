@@ -364,7 +364,7 @@ public class ConnectionTest {
                         String.format(
                                 // TODO: WAL
                                 "jdbc:sqlite:%s?synchronous=OFF&&&&journal_mode=OFF", testDB));
-                                // "jdbc:sqlite:%s?synchronous=OFF&&&&journal_mode=WAL", testDB));
+        // "jdbc:sqlite:%s?synchronous=OFF&&&&journal_mode=WAL", testDB));
         Statement stat = conn.createStatement();
 
         // TODO: WAL
