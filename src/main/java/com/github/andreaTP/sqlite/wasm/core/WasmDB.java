@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.text.MessageFormat;
+import java.util.Locale;
 
 public class WasmDB extends DB {
     private static final Logger logger = LoggerFactory.getLogger(WasmDB.class);
@@ -42,7 +43,6 @@ public class WasmDB extends DB {
 
     /** SQLite connection handle. */
     private int dbPtrPtr = 0;
-
     private int dbPtr = 0;
 
     public WasmDB(String url, String fileName, SQLiteConfig config) throws SQLException {
@@ -104,19 +104,18 @@ public class WasmDB extends DB {
 
     @Override
     protected void _open(String filename, int openFlags) throws SQLException {
-        if (!filename.equals(":memory:") && !filename.isEmpty()) {
-            filename = fs.getPath("tmp").resolve(this.dbFileName).toString();
-            if (new File(filename).exists()) {
-                try (InputStream is = new FileInputStream(filename)) {
-                    java.nio.file.Files.copy(
-                            is,
-                            fs.getPath("tmp").resolve(this.dbFileName),
-                            StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    throw new SQLException("Failed to map to memory the file: " + filename);
-                }
+        if (new File(filename).exists() && !filename.isEmpty()) {
+            try (InputStream is = new FileInputStream(filename)) {
+                java.nio.file.Files.copy(
+                        is,
+                        fs.getPath("tmp").resolve(this.dbFileName),
+                        StandardCopyOption.REPLACE_EXISTING);
+                filename = fs.getPath("tmp").resolve(this.dbFileName).toString();
+            } catch (IOException e) {
+                throw new SQLException("Failed to map to memory the file: " + filename);
             }
         }
+
         this.dbPtrPtr = exports.malloc(PTR_SIZE);
         int dbNamePtr = exports.allocCString(filename).ptr();
 
@@ -197,8 +196,7 @@ public class WasmDB extends DB {
 
     @Override
     public void busy_timeout(int ms) throws SQLException {
-        // throw new RuntimeException("busy_timeout not implemented in WasmDB");
-        // TODO: implement me skip for now
+        exports.busyTimeout(dbPtr(), ms);
     }
 
     @Override
