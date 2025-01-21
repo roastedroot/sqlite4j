@@ -26,72 +26,65 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.text.MessageFormat;
-import java.util.Locale;
 
 public class WasmDB extends DB {
     private static final Logger logger = LoggerFactory.getLogger(WasmDB.class);
 
     public static final int PTR_SIZE = 4;
 
-    private final Instance instance;
-    private final WasiPreview1 wasiPreview1;
-    private final WasmDBExports exports;
+    private static final Instance INSTANCE;
+    private static final WasiPreview1 WASI_PREVIEW_1;
+    private static final WasmDBExports EXPORTS;
 
     // TODO: double-check proper cleanup of resources
-    private final FileSystem fs;
+    private static final FileSystem FS;
+
+    static {
+        // TODO: should this logic go to: loadSQLiteNativeLibrary ?
+        FS =
+                Jimfs.newFileSystem(
+                        Configuration.unix().toBuilder().setAttributeViews("unix").build());
+        Path target = FS.getPath("tmp");
+        try {
+            java.nio.file.Files.createDirectory(target);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create directory on the in-memory fs", e);
+        }
+
+        WasiOptions wasiOpts =
+                WasiOptions.builder()
+                        .inheritSystem()
+                        .withDirectory(target.toString(), target)
+                        .build();
+        WASI_PREVIEW_1 = WasiPreview1.builder().withOptions(wasiOpts).build();
+        INSTANCE =
+                Instance.builder(SQLiteModule.load())
+                        .withMachineFactory(SQLiteModule::create)
+                        .withImportValues(
+                                ImportValues.builder()
+                                        .addFunction(WASI_PREVIEW_1.toHostFunctions())
+                                        .build())
+                        .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
+                        .build();
+        EXPORTS = new WasmDBExports(INSTANCE);
+    }
+
+    public static String version() {
+        int ptr = EXPORTS.version();
+        String version = INSTANCE.memory().readCString(ptr);
+        return version;
+    }
+
     private final String dbFileName;
 
     /** SQLite connection handle. */
     private int dbPtrPtr = 0;
+
     private int dbPtr = 0;
 
     public WasmDB(String url, String fileName, SQLiteConfig config) throws SQLException {
         super(url, fileName, config);
-        if (!fileName.equals(":memory:")) {
-            this.fs =
-                    Jimfs.newFileSystem(
-                            Configuration.unix().toBuilder().setAttributeViews("unix").build());
-            Path target = fs.getPath("tmp");
-            try {
-                java.nio.file.Files.createDirectory(target);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to create directory on the in-memory fs", e);
-            }
-            this.dbFileName = Path.of(fileName).toFile().getName();
-
-            WasiOptions wasiOpts =
-                    WasiOptions.builder()
-                            .inheritSystem()
-                            .withDirectory(target.toString(), target)
-                            .build();
-            this.wasiPreview1 = WasiPreview1.builder().withOptions(wasiOpts).build();
-            this.instance =
-                    Instance.builder(SQLiteModule.load())
-                            .withMachineFactory(SQLiteModule::create)
-                            .withImportValues(
-                                    ImportValues.builder()
-                                            .addFunction(wasiPreview1.toHostFunctions())
-                                            .build())
-                            .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
-                            .build();
-        } else {
-            this.fs = null;
-            this.dbFileName = null;
-
-            WasiOptions wasiOpts = WasiOptions.builder().inheritSystem().build();
-            this.wasiPreview1 = WasiPreview1.builder().withOptions(wasiOpts).build();
-            this.instance =
-                    Instance.builder(SQLiteModule.load())
-                            .withMachineFactory(SQLiteModule::create)
-                            .withImportValues(
-                                    ImportValues.builder()
-                                            .addFunction(wasiPreview1.toHostFunctions())
-                                            .build())
-                            .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
-                            .build();
-        }
-
-        this.exports = new WasmDBExports(instance);
+        this.dbFileName = Path.of(fileName).toFile().getName();
     }
 
     // safe access to the dbPointer
@@ -105,11 +98,11 @@ public class WasmDB extends DB {
     @Override
     protected void _open(String filename, int openFlags) throws SQLException {
         if (new File(filename).exists() && !filename.isEmpty()) {
-            Path dest = fs.getPath("tmp").resolve(this.dbFileName);
+            Path dest = FS.getPath("tmp").resolve(this.dbFileName);
             try (InputStream is = new FileInputStream(filename)) {
                 java.nio.file.Files.copy(
                         is,
-                        fs.getPath("tmp").resolve(this.dbFileName),
+                        FS.getPath("tmp").resolve(this.dbFileName),
                         StandardCopyOption.REPLACE_EXISTING);
                 filename = dest.toString();
             } catch (IOException e) {
@@ -117,15 +110,15 @@ public class WasmDB extends DB {
             }
         }
 
-        this.dbPtrPtr = exports.malloc(PTR_SIZE);
-        int dbNamePtr = exports.allocCString(filename).ptr();
+        this.dbPtrPtr = EXPORTS.malloc(PTR_SIZE);
+        int dbNamePtr = EXPORTS.allocCString(filename).ptr();
 
-        int res = exports.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
-        this.dbPtr = instance.memory().readInt(this.dbPtrPtr);
+        int res = EXPORTS.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
+        this.dbPtr = INSTANCE.memory().readInt(this.dbPtrPtr);
         if (res != SQLITE_OK) {
-            int errCode = exports.extendedErrorcode(dbPtr);
+            int errCode = EXPORTS.extendedErrorcode(dbPtr);
             String errmsg = errmsg();
-            exports.close(dbPtr);
+            EXPORTS.close(dbPtr);
             throw new SQLException(
                     "Failed to open database "
                             + filename
@@ -134,7 +127,7 @@ public class WasmDB extends DB {
                             + ", error message: "
                             + errmsg);
         }
-        exports.free(dbNamePtr);
+        EXPORTS.free(dbNamePtr);
     }
 
     @Override
@@ -144,33 +137,33 @@ public class WasmDB extends DB {
                         MessageFormat.format(
                                 "DriverManager [{0}] [SQLite EXEC] {1}",
                                 Thread.currentThread().getName(), sql));
-        int stmtPtrPtr = exports.malloc(PTR_SIZE);
-        WasmDBExports.StringPtrSize str = exports.allocCString(sql);
+        int stmtPtrPtr = EXPORTS.malloc(PTR_SIZE);
+        WasmDBExports.StringPtrSize str = EXPORTS.allocCString(sql);
 
-        exports.prepareV2(dbPtr(), str.ptr(), str.size(), stmtPtrPtr, 0);
-        exports.free(str.ptr());
+        EXPORTS.prepareV2(dbPtr(), str.ptr(), str.size(), stmtPtrPtr, 0);
+        EXPORTS.free(str.ptr());
 
         return new SafeStmtPtr(this, stmtPtrPtr);
     }
 
     @Override
     protected int finalize(long stmtPtrPtr) throws SQLException {
-        int result = exports.finalize(exports.ptr((int) stmtPtrPtr));
-        exports.free((int) stmtPtrPtr);
+        int result = EXPORTS.finalize(EXPORTS.ptr((int) stmtPtrPtr));
+        EXPORTS.free((int) stmtPtrPtr);
         return result;
     }
 
     @Override
     public int step(long stmtPtrPtr) throws SQLException {
-        return exports.step(exports.ptr((int) stmtPtrPtr));
+        return EXPORTS.step(EXPORTS.ptr((int) stmtPtrPtr));
     }
 
     @Override
     public int _exec(String sql) throws SQLException {
-        int sqlBytesPtr = exports.allocCString(sql).ptr();
+        int sqlBytesPtr = EXPORTS.allocCString(sql).ptr();
 
-        int status = exports.exec(dbPtr(), sqlBytesPtr, 0, 0, 0);
-        exports.free(sqlBytesPtr);
+        int status = EXPORTS.exec(dbPtr(), sqlBytesPtr, 0, 0, 0);
+        EXPORTS.free(sqlBytesPtr);
         if (status != SQLITE_OK) {
             String errmsg = errmsg();
             throw new SQLException(
@@ -187,7 +180,7 @@ public class WasmDB extends DB {
 
     @Override
     public long changes() throws SQLException {
-        return exports.changes(dbPtr());
+        return EXPORTS.changes(dbPtr());
     }
 
     @Override
@@ -197,7 +190,7 @@ public class WasmDB extends DB {
 
     @Override
     public void busy_timeout(int ms) throws SQLException {
-        exports.busyTimeout(dbPtr(), ms);
+        EXPORTS.busyTimeout(dbPtr(), ms);
     }
 
     @Override
@@ -207,8 +200,8 @@ public class WasmDB extends DB {
 
     @Override
     String errmsg() throws SQLException {
-        int errPtr = exports.errmsg(dbPtr());
-        String err = instance.memory().readCString(errPtr);
+        int errPtr = EXPORTS.errmsg(dbPtr());
+        String err = INSTANCE.memory().readCString(errPtr);
         return err;
     }
 
@@ -219,7 +212,7 @@ public class WasmDB extends DB {
 
     @Override
     public long total_changes() throws SQLException {
-        return exports.totalChanges(dbPtr());
+        return EXPORTS.totalChanges(dbPtr());
     }
 
     @Override
@@ -236,40 +229,45 @@ public class WasmDB extends DB {
 
     @Override
     protected void _close() throws SQLException {
-        exports.close(dbPtr());
-        exports.free(dbPtrPtr);
-        if (this.fs != null) {
-            try {
-                this.fs.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        EXPORTS.close(dbPtr());
+        EXPORTS.free(dbPtrPtr);
+        // TODO: when can we cleanup those resources?
+        // Moving the library to load once this is a downside
+        //        if (FS != null) {
+        //            try {
+        //                FS.close();
+        //            } catch (IOException e) {
+        //                throw new RuntimeException(e);
+        //            }
+        //        }
+        //        if (WASI_PREVIEW_1 != null) {
+        //            WASI_PREVIEW_1.close();
+        //        }
     }
 
     @Override
     public int reset(long stmtPtrPtr) throws SQLException {
-        return exports.reset(exports.ptr((int) stmtPtrPtr));
+        return EXPORTS.reset(EXPORTS.ptr((int) stmtPtrPtr));
     }
 
     @Override
     public int clear_bindings(long stmtPtrPtr) throws SQLException {
-        return exports.clearBindings(exports.ptr((int) stmtPtrPtr));
+        return EXPORTS.clearBindings(EXPORTS.ptr((int) stmtPtrPtr));
     }
 
     @Override
     int bind_parameter_count(long stmtPtrPtr) throws SQLException {
-        return exports.bindParameterCount(exports.ptr((int) stmtPtrPtr));
+        return EXPORTS.bindParameterCount(EXPORTS.ptr((int) stmtPtrPtr));
     }
 
     @Override
     public int column_count(long stmtPtrPtr) throws SQLException {
-        return exports.columnCount(exports.ptr((int) stmtPtrPtr));
+        return EXPORTS.columnCount(EXPORTS.ptr((int) stmtPtrPtr));
     }
 
     @Override
     public int column_type(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnType(exports.ptr((int) stmtPtrPtr), col);
+        return EXPORTS.columnType(EXPORTS.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
@@ -284,23 +282,23 @@ public class WasmDB extends DB {
 
     @Override
     public String column_name(long stmtPtrPtr, int col) throws SQLException {
-        int columnNamePtr = exports.columnName(exports.ptr((int) stmtPtrPtr), col);
+        int columnNamePtr = EXPORTS.columnName(EXPORTS.ptr((int) stmtPtrPtr), col);
         if (columnNamePtr == 0) {
             return null;
         }
-        return instance.memory().readCString(columnNamePtr);
+        return INSTANCE.memory().readCString(columnNamePtr);
     }
 
     @Override
     public String column_text(long stmtPtrPtr, int col) throws SQLException {
-        int stmtPtr = exports.ptr((int) stmtPtrPtr);
-        int txtPtr = exports.columnText(stmtPtr, col);
-        int txtLength = exports.columnBytes(stmtPtr, col);
+        int stmtPtr = EXPORTS.ptr((int) stmtPtrPtr);
+        int txtPtr = EXPORTS.columnText(stmtPtr, col);
+        int txtLength = EXPORTS.columnBytes(stmtPtr, col);
         if (txtPtr == 0) {
             return null;
         }
 
-        byte[] bytes = instance.memory().readBytes(txtPtr, txtLength);
+        byte[] bytes = INSTANCE.memory().readBytes(txtPtr, txtLength);
         String result;
         // TODO: verify that the fallback should be here or not ...
         if (bytes.length > 0 && bytes[bytes.length - 1] == '\0') {
@@ -310,64 +308,65 @@ public class WasmDB extends DB {
         } else {
             result = new String(bytes, StandardCharsets.UTF_8);
         }
-        exports.free(txtPtr);
+        // TODO: verify if this result doesn't need a free ...
+        // EXPORTS.free(txtPtr);
         return result;
     }
 
     @Override
     public byte[] column_blob(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnBlob(exports.ptr((int) stmtPtrPtr), col);
+        return EXPORTS.columnBlob(EXPORTS.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     public double column_double(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnDouble(exports.ptr((int) stmtPtrPtr), col);
+        return EXPORTS.columnDouble(EXPORTS.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     public long column_long(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnLong(exports.ptr((int) stmtPtrPtr), col);
+        return EXPORTS.columnLong(EXPORTS.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     public int column_int(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnInt(exports.ptr((int) stmtPtrPtr), col);
+        return EXPORTS.columnInt(EXPORTS.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     int bind_null(long stmtPtrPtr, int pos) throws SQLException {
-        return exports.bindNull(exports.ptr((int) stmtPtrPtr), pos);
+        return EXPORTS.bindNull(EXPORTS.ptr((int) stmtPtrPtr), pos);
     }
 
     @Override
     int bind_int(long stmtPtrPtr, int pos, int v) throws SQLException {
-        return exports.bindInt(exports.ptr((int) stmtPtrPtr), pos, v);
+        return EXPORTS.bindInt(EXPORTS.ptr((int) stmtPtrPtr), pos, v);
     }
 
     @Override
     int bind_long(long stmtPtrPtr, int pos, long v) throws SQLException {
-        return exports.bindLong(exports.ptr((int) stmtPtrPtr), pos, v);
+        return EXPORTS.bindLong(EXPORTS.ptr((int) stmtPtrPtr), pos, v);
     }
 
     @Override
     int bind_double(long stmtPtrPtr, int pos, double v) throws SQLException {
-        return exports.bindDouble(exports.ptr((int) stmtPtrPtr), pos, v);
+        return EXPORTS.bindDouble(EXPORTS.ptr((int) stmtPtrPtr), pos, v);
     }
 
     @Override
     int bind_text(long stmtPtrPtr, int pos, String v) throws SQLException {
-        WasmDBExports.StringPtrSize str = exports.allocCString(v);
-        int result = exports.bindText(exports.ptr((int) stmtPtrPtr), pos, str.ptr(), str.size());
-        exports.free(str.ptr());
+        WasmDBExports.StringPtrSize str = EXPORTS.allocCString(v);
+        int result = EXPORTS.bindText(EXPORTS.ptr((int) stmtPtrPtr), pos, str.ptr(), str.size());
+        EXPORTS.free(str.ptr());
         return result;
     }
 
     @Override
     int bind_blob(long stmtPtrPtr, int pos, byte[] v) throws SQLException {
-        int blobPtr = exports.malloc(v.length);
-        instance.memory().write(blobPtr, v);
-        int result = exports.bindBlob(exports.ptr((int) stmtPtrPtr), pos, blobPtr, v.length);
-        exports.free(blobPtr);
+        int blobPtr = EXPORTS.malloc(v.length);
+        INSTANCE.memory().write(blobPtr, v);
+        int result = EXPORTS.bindBlob(EXPORTS.ptr((int) stmtPtrPtr), pos, blobPtr, v.length);
+        EXPORTS.free(blobPtr);
         return result;
     }
 
@@ -494,7 +493,7 @@ public class WasmDB extends DB {
 
     @Override
     public int limit(int id, int value) throws SQLException {
-        return exports.limit(dbPtr(), id, value);
+        return EXPORTS.limit(dbPtr(), id, value);
     }
 
     @Override

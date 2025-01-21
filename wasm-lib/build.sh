@@ -50,13 +50,12 @@ cp ${SCRIPT_DIR}/sqlite_cfg.h ${SCRIPT_DIR}/sqlite-amalgamation/
         -D_HAVE_SQLITE_CONFIG_H \
         -DSQLITE_CUSTOM_INCLUDE=sqlite_opt.h \
         -Wl,--export-all \
-        -Wl,--allow-undefined \
         -Wl,--no-entry \
         -Wl,--initial-memory=327680 \
         -mnontrapping-fptoint -msign-ext \
 	    -fno-stack-protector -fno-stack-clash-protection \
 	    -Wl,--stack-first \
-	    -Wl,--import-undefined \
+	    -Wl,--allow-undefined \
         -mmutable-globals -mmultivalue \
 	    -mbulk-memory -mreference-types \
         -mexec-model=reactor \

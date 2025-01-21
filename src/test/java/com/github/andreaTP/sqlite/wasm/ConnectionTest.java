@@ -287,7 +287,9 @@ public class ConnectionTest {
         Connection conn =
                 DriverManager.getConnection(
                         String.format(
-                                "jdbc:sqlite:%s?journal_mode=WAL&synchronous=OFF&journal_size_limit=500",
+                                // TODO: WAL
+                                // "jdbc:sqlite:%s?journal_mode=WAL&synchronous=OFF&journal_size_limit=500",
+                                "jdbc:sqlite:%s?journal_mode=truncate&synchronous=OFF&journal_size_limit=500",
                                 testDB));
         Statement stat = conn.createStatement();
 
@@ -295,8 +297,11 @@ public class ConnectionTest {
         //        ResultSet rs = stat.executeQuery("pragma journal_mode");
         //        assertThat(rs.getString(1)).isEqualTo("wal");
         //        rs.close();
+        ResultSet rs = stat.executeQuery("pragma journal_mode");
+        assertThat(rs.getString(1)).isEqualTo("truncate");
+        rs.close();
 
-        ResultSet rs = stat.executeQuery("pragma synchronous");
+        rs = stat.executeQuery("pragma synchronous");
         assertThat(rs.getBoolean(1)).isEqualTo(false);
         rs.close();
 
@@ -357,15 +362,20 @@ public class ConnectionTest {
         Connection conn =
                 DriverManager.getConnection(
                         String.format(
-                                "jdbc:sqlite:%s?synchronous=OFF&&&&journal_mode=WAL", testDB));
+                                // TODO: WAL
+                                "jdbc:sqlite:%s?synchronous=OFF&&&&journal_mode=OFF", testDB));
+                                // "jdbc:sqlite:%s?synchronous=OFF&&&&journal_mode=WAL", testDB));
         Statement stat = conn.createStatement();
 
         // TODO: WAL
         //        ResultSet rs = stat.executeQuery("pragma journal_mode");
         //        assertThat(rs.getString(1)).isEqualTo("wal");
         //        rs.close();
+        ResultSet rs = stat.executeQuery("pragma journal_mode");
+        assertThat(rs.getString(1)).isEqualTo("off");
+        rs.close();
 
-        ResultSet rs = stat.executeQuery("pragma synchronous");
+        rs = stat.executeQuery("pragma synchronous");
         assertThat(rs.getBoolean(1)).isFalse();
         rs.close();
 

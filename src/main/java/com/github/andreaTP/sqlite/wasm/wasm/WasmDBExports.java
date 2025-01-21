@@ -46,6 +46,7 @@ public class WasmDBExports {
     private final ExportFunction errmsg;
     private final ExportFunction extendedErrcode;
     private final ExportFunction busyTimeout;
+    private final ExportFunction version;
 
     public WasmDBExports(Instance instance) {
         this.instance = instance;
@@ -82,6 +83,7 @@ public class WasmDBExports {
         this.errmsg = instance.exports().function("sqlite3_errmsg");
         this.extendedErrcode = instance.exports().function("sqlite3_extended_errcode");
         this.busyTimeout = instance.exports().function("sqlite3_busy_timeout");
+        this.version = instance.exports().function("sqlite3_libversion");
     }
 
     public int malloc(int size) {
@@ -268,5 +270,9 @@ public class WasmDBExports {
 
     public int busyTimeout(int dbPtr, int ms) {
         return (int) busyTimeout.apply(dbPtr, ms)[0];
+    }
+
+    public int version() {
+        return (int) version.apply()[0];
     }
 }

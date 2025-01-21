@@ -24,6 +24,7 @@
 // --------------------------------------
 package com.github.andreaTP.sqlite.wasm;
 
+import com.github.andreaTP.sqlite.wasm.core.WasmDB;
 import com.github.andreaTP.sqlite.wasm.util.LibraryLoaderUtil;
 import com.github.andreaTP.sqlite.wasm.util.Logger;
 import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
@@ -57,11 +58,14 @@ import java.util.stream.Stream;
  *
  * @author leo
  */
+// TODO: clean this file up from everything not needed
 public class SQLiteJDBCLoader {
     private static final Logger logger = LoggerFactory.getLogger(SQLiteJDBCLoader.class);
 
     private static final String LOCK_EXT = ".lck";
-    private static boolean extracted = false;
+    // TODO: WASM remove all the logic for loading the static native library and uncompressing it
+    // WasmDB static initializer logic goes here?
+    private static boolean extracted = true;
 
     /**
      * Loads SQLite native JDBC library.
@@ -393,48 +397,7 @@ public class SQLiteJDBCLoader {
      * @return The version of the SQLite JDBC driver.
      */
     public static String getVersion() {
-        return VersionHolder.VERSION;
-    }
-
-    /**
-     * This class will load the version from resources during <clinit>. By initializing this at
-     * build-time in native-image, the resources do not need to be included in the native
-     * executable, and we're eliminating the IO operations as well.
-     */
-    public static final class VersionHolder {
-        private static final String VERSION;
-
-        static {
-            URL versionFile =
-                    VersionHolder.class.getResource(
-                            "/META-INF/maven/org.xerial/sqlite-jdbc/pom.properties");
-            if (versionFile == null) {
-                versionFile =
-                        VersionHolder.class.getResource(
-                                "/META-INF/maven/org.xerial/sqlite-jdbc/VERSION");
-            }
-
-            String version = "unknown";
-            try {
-                if (versionFile != null) {
-                    Properties versionData = new Properties();
-                    versionData.load(versionFile.openStream());
-                    version = versionData.getProperty("version", version);
-                    version = version.trim().replaceAll("[^0-9\\.]", "");
-                }
-            } catch (IOException e) {
-                // inline creation of logger to avoid build-time initialization of the logging
-                // framework in native-image
-                URL finalVersionFile = versionFile;
-                LoggerFactory.getLogger(VersionHolder.class)
-                        .error(
-                                () ->
-                                        MessageFormat.format(
-                                                "Could not read version from file: {0}",
-                                                finalVersionFile),
-                                e);
-            }
-            VERSION = version;
-        }
+        return WasmDB.version();
+        // return VersionHolder.VERSION;
     }
 }
