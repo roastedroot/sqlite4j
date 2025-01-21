@@ -105,12 +105,13 @@ public class WasmDB extends DB {
     @Override
     protected void _open(String filename, int openFlags) throws SQLException {
         if (new File(filename).exists() && !filename.isEmpty()) {
+            Path dest = fs.getPath("tmp").resolve(this.dbFileName);
             try (InputStream is = new FileInputStream(filename)) {
                 java.nio.file.Files.copy(
                         is,
                         fs.getPath("tmp").resolve(this.dbFileName),
                         StandardCopyOption.REPLACE_EXISTING);
-                filename = fs.getPath("tmp").resolve(this.dbFileName).toString();
+                filename = dest.toString();
             } catch (IOException e) {
                 throw new SQLException("Failed to map to memory the file: " + filename);
             }
