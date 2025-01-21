@@ -1,7 +1,6 @@
 package com.github.andreaTP.sqlite.wasm.wasm;
 
 import static com.github.andreaTP.sqlite.wasm.core.Codes.SQLITE_NULL;
-import static com.github.andreaTP.sqlite.wasm.core.WasmDB.PTR_SIZE;
 
 import com.dylibso.chicory.runtime.ExportFunction;
 import com.dylibso.chicory.runtime.Instance;
