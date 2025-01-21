@@ -1,11 +1,11 @@
 package com.github.andreaTP.sqlite.wasm.wasm;
 
 import static com.github.andreaTP.sqlite.wasm.core.Codes.SQLITE_NULL;
+import static com.github.andreaTP.sqlite.wasm.core.WasmDB.PTR_SIZE;
 
 import com.dylibso.chicory.runtime.ExportFunction;
 import com.dylibso.chicory.runtime.Instance;
 import com.dylibso.chicory.wasm.types.Value;
-
 import java.nio.charset.StandardCharsets;
 
 // Manually writing it to avoid passing through the Map lookup on every invocation
@@ -38,9 +38,11 @@ public class WasmDBExports {
     private final ExportFunction columnBlob;
     private final ExportFunction columnBytes;
     private final ExportFunction bindInt;
+    private final ExportFunction bindLong;
     private final ExportFunction bindDouble;
     private final ExportFunction bindNull;
     private final ExportFunction bindText;
+    private final ExportFunction bindBlob;
     private final ExportFunction limit;
     private final ExportFunction errmsg;
     private final ExportFunction extendedErrcode;
@@ -71,9 +73,11 @@ public class WasmDBExports {
         this.columnBlob = instance.exports().function("sqlite3_column_blob");
         this.columnBytes = instance.exports().function("sqlite3_column_bytes");
         this.bindInt = instance.exports().function("sqlite3_bind_int");
+        this.bindLong = instance.exports().function("sqlite3_bind_int64");
         this.bindDouble = instance.exports().function("sqlite3_bind_double");
         this.bindNull = instance.exports().function("sqlite3_bind_null");
         this.bindText = instance.exports().function("sqlite3_bind_text");
+        this.bindBlob = instance.exports().function("sqlite3_bind_blob");
         this.limit = instance.exports().function("sqlite3_limit");
         this.errmsg = instance.exports().function("sqlite3_errmsg");
         this.extendedErrcode = instance.exports().function("sqlite3_extended_errcode");
@@ -123,7 +127,7 @@ public class WasmDBExports {
     //    sqlite3 **ppDb,         /* OUT: SQLite db handle */
     //    int flags,              /* Flags */
     //    const char *zVfs        /* Name of VFS module to use */
-    public int openV2(int filenamePtr, /* OUT */ int dbPtrPtr, int flags, int zVfs) {
+    public int openV2(int filenamePtr, /* OUT */ long dbPtrPtr, int flags, int zVfs) {
         return (int) openV2.apply(filenamePtr, dbPtrPtr, flags, zVfs)[0];
     }
 
@@ -237,6 +241,10 @@ public class WasmDBExports {
         return (int) bindInt.apply(stmtPtr, pos, v)[0];
     }
 
+    public int bindLong(int stmtPtr, int pos, long v) {
+        return (int) bindLong.apply(stmtPtr, pos, v)[0];
+    }
+
     public int bindDouble(int stmtPtr, int pos, double v) {
         return (int) bindDouble.apply(stmtPtr, pos, Value.doubleToLong(v))[0];
     }
@@ -247,6 +255,10 @@ public class WasmDBExports {
 
     public int bindText(int stmtPtr, int pos, int vPtr, int vLength) {
         return (int) bindText.apply(stmtPtr, pos, vPtr, vLength, SQLITE_TRANSIENT)[0];
+    }
+
+    public int bindBlob(int stmtPtr, int pos, int vPtr, int vLength) {
+        return (int) bindBlob.apply(stmtPtr, pos, vPtr, vLength, SQLITE_TRANSIENT)[0];
     }
 
     public int errmsg(int dbPtr) {
