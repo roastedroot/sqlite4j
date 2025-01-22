@@ -37,6 +37,9 @@ rm -f ${SCRIPT_DIR}/libsqlite3-opt.wasm
 # rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite_wrapper.c
 # cp ${SCRIPT_DIR}/sqlite_wrapper.c ${SCRIPT_DIR}/sqlite-amalgamation/
 
+rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite3_helpers.c
+cp ${SCRIPT_DIR}/sqlite3_helpers.c ${SCRIPT_DIR}/sqlite-amalgamation/
+
 rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite_opt.h
 rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite_cfg.h
 cp ${SCRIPT_DIR}/sqlite_opt.h ${SCRIPT_DIR}/sqlite-amalgamation/
@@ -47,7 +50,7 @@ cp ${SCRIPT_DIR}/sqlite_cfg.h ${SCRIPT_DIR}/sqlite-amalgamation/
     ${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot \
         --target=wasm32-wasi \
         -o ../libsqlite3.wasm \
-        sqlite3.c \
+        sqlite3.c sqlite3_helpers.c \
         -Wl,--export-all \
         -Wl,--import-undefined \
         -Wl,--no-entry \

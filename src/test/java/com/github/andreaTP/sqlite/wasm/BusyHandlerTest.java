@@ -62,7 +62,7 @@ public class BusyHandlerTest {
                     "wait_for_latch",
                     new Function() {
                         @Override
-                        protected void xFunc() throws SQLException {
+                        public void xFunc() throws SQLException {
                             lockedLatch.countDown();
                             try {
                                 completeLatch.await();
@@ -218,21 +218,21 @@ public class BusyHandlerTest {
         SQLiteConnection sqliteConnection = (SQLiteConnection) conn;
         setDummyHandler();
         final DB database = sqliteConnection.getDatabase();
-        // Assertions.assertThat(NativeDBHelper.getBusyHandler(database)).isNotEqualTo(0);
-        // BusyHandler.clearHandler(conn);
-        // assertThat(NativeDBHelper.getBusyHandler(database)).isEqualTo(0);
-        // BusyHandler.clearHandler(conn);
-
-        // setDummyHandler();
-        // assertThat(NativeDBHelper.getBusyHandler(database)).isNotEqualTo(0);
-        // BusyHandler.setHandler(conn, null);
-        // assertThat(NativeDBHelper.getBusyHandler(database)).isEqualTo(0);
-        // BusyHandler.setHandler(conn, null);
-
-        // setDummyHandler();
-        // assertThat(NativeDBHelper.getBusyHandler(database)).isNotEqualTo(0);
-        // conn.close();
-        // assertThat(NativeDBHelper.getBusyHandler(database)).isEqualTo(0);
+        //         Assertions.assertThat(NativeDBHelper.getBusyHandler(database)).isNotEqualTo(0);
+        //         BusyHandler.clearHandler(conn);
+        //         assertThat(NativeDBHelper.getBusyHandler(database)).isEqualTo(0);
+        //         BusyHandler.clearHandler(conn);
+        //
+        //         setDummyHandler();
+        //         assertThat(NativeDBHelper.getBusyHandler(database)).isNotEqualTo(0);
+        //         BusyHandler.setHandler(conn, null);
+        //         assertThat(NativeDBHelper.getBusyHandler(database)).isEqualTo(0);
+        //         BusyHandler.setHandler(conn, null);
+        //
+        //         setDummyHandler();
+        //         assertThat(NativeDBHelper.getBusyHandler(database)).isNotEqualTo(0);
+        //         conn.close();
+        //         assertThat(NativeDBHelper.getBusyHandler(database)).isEqualTo(0);
     }
 
     private void setDummyHandler() throws SQLException {

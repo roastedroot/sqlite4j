@@ -1,18 +1,20 @@
 package com.github.andreaTP.sqlite.wasm.core;
 
+import com.dylibso.chicory.runtime.HostFunction;
 import com.dylibso.chicory.runtime.ImportValues;
 import com.dylibso.chicory.runtime.Instance;
 import com.dylibso.chicory.wasi.WasiOptions;
 import com.dylibso.chicory.wasi.WasiPreview1;
+import com.dylibso.chicory.wasm.WasmModule;
 import com.dylibso.chicory.wasm.types.MemoryLimits;
+import com.dylibso.chicory.wasm.types.ValueType;
 import com.github.andreaTP.sqlite.wasm.BusyHandler;
 import com.github.andreaTP.sqlite.wasm.Collation;
 import com.github.andreaTP.sqlite.wasm.Function;
 import com.github.andreaTP.sqlite.wasm.ProgressHandler;
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
 import com.github.andreaTP.sqlite.wasm.SQLiteModule;
-import com.github.andreaTP.sqlite.wasm.util.Logger;
-import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
+import com.github.andreaTP.sqlite.wasm.wasm.UDFStore;
 import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -25,19 +27,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
-import java.text.MessageFormat;
+import java.util.List;
 
 public class WasmDB extends DB {
-    private static final Logger logger = LoggerFactory.getLogger(WasmDB.class);
-
     public static final int PTR_SIZE = 4;
 
-    public final Instance instance;
-    public final WasiPreview1 wasiPreview1;
-    public final WasmDBExports exports;
+    private static final WasmModule MODULE = SQLiteModule.load();
+
+    private final Instance instance;
+    private final WasiPreview1 wasiPreview1;
+    private final WasmDBExports exports;
 
     // TODO: double-check proper cleanup of resources
-    public final FileSystem fs;
+    private final FileSystem fs;
 
     public String version() {
         int ptr = exports.version();
@@ -52,7 +54,6 @@ public class WasmDB extends DB {
 
     public WasmDB(String url, String fileName, SQLiteConfig config) throws SQLException {
         super(url, fileName, config);
-
         fs =
                 Jimfs.newFileSystem(
                         Configuration.unix().toBuilder().setAttributeViews("unix").build());
@@ -70,15 +71,62 @@ public class WasmDB extends DB {
                         .build();
         wasiPreview1 = WasiPreview1.builder().withOptions(wasiOpts).build();
         instance =
-                Instance.builder(SQLiteModule.load())
+                Instance.builder(MODULE)
                         .withMachineFactory(SQLiteModule::create)
                         .withImportValues(
                                 ImportValues.builder()
                                         .addFunction(wasiPreview1.toHostFunctions())
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xFunc",
+                                                        List.of(
+                                                                ValueType.I32,
+                                                                ValueType.I32,
+                                                                ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> xFunc(args)))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xDestroy",
+                                                        List.of(ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> xDestroy(args)))
                                         .build())
                         .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
                         .build();
         exports = new WasmDBExports(instance);
+    }
+
+    private long[] xDestroy(long[] args) {
+        int funIdx = (int) args[0];
+
+        UDFStore.free(funIdx);
+        return null;
+    }
+
+    private long[] xFunc(long[] args) {
+        int ctx = (int) args[0];
+        int argN = (int) args[1];
+        int value = (int) args[2];
+
+        int funIdx = exports.userData(ctx);
+
+        Function f = UDFStore.get(funIdx);
+
+        // TODO: verify if all of this is needed ...
+        f.setContext(ctx);
+        f.setValue(value);
+        f.setArgs(argN);
+
+        try {
+            f.xFunc();
+            // TODO: decide how to handle the checked exception thrown here
+        } catch (SQLException e) {
+            throw new RuntimeException("wrapped SQLException", e);
+        }
+        return null;
     }
 
     // safe access to the dbPointer
@@ -132,11 +180,6 @@ public class WasmDB extends DB {
 
     @Override
     protected SafeStmtPtr prepare(String sql) throws SQLException {
-        logger.trace(
-                () ->
-                        MessageFormat.format(
-                                "DriverManager [{0}] [SQLite EXEC] {1}",
-                                Thread.currentThread().getName(), sql));
         int stmtPtrPtr = exports.malloc(PTR_SIZE);
         WasmDBExports.StringPtrSize str = exports.allocCString(sql);
 
@@ -377,22 +420,26 @@ public class WasmDB extends DB {
 
     @Override
     public void result_text(long context, String val) throws SQLException {
-        throw new RuntimeException("result_text not implemented in WasmDB");
+        WasmDBExports.StringPtrSize txt = exports.allocCString(val);
+        exports.resultText((int) context, txt.ptr(), txt.size());
     }
 
     @Override
-    public void result_blob(long context, byte[] val) throws SQLException {
-        throw new RuntimeException("result_blob not implemented in WasmDB");
+    public void result_blob(long context, byte[] v) throws SQLException {
+        int blobPtr = exports.malloc(v.length);
+        instance.memory().write(blobPtr, v);
+        exports.resultBlob((int) context, blobPtr, v.length);
+        exports.free(blobPtr);
     }
 
     @Override
     public void result_double(long context, double val) throws SQLException {
-        throw new RuntimeException("result_double not implemented in WasmDB");
+        exports.resultDouble((int) context, val);
     }
 
     @Override
     public void result_long(long context, long val) throws SQLException {
-        throw new RuntimeException("result_long not implemented in WasmDB");
+        exports.resultLong((int) context, val);
     }
 
     @Override
@@ -407,7 +454,12 @@ public class WasmDB extends DB {
 
     @Override
     public String value_text(Function f, int arg) throws SQLException {
-        throw new RuntimeException("value_text not implemented in WasmDB");
+        int valuePtrPtr = exports.ptr((int) f.getValue());
+        int txtPtr = exports.valueText(valuePtrPtr);
+        // TODO: count the bytes and do this more acurately
+        String result = instance.memory().readCString(txtPtr);
+        exports.free(txtPtr);
+        return result;
     }
 
     @Override
@@ -417,7 +469,8 @@ public class WasmDB extends DB {
 
     @Override
     public double value_double(Function f, int arg) throws SQLException {
-        throw new RuntimeException("value_double not implemented in WasmDB");
+        int valuePtrPtr = exports.ptr((int) f.getValue());
+        return exports.valueDouble(valuePtrPtr);
     }
 
     @Override
@@ -437,7 +490,9 @@ public class WasmDB extends DB {
 
     @Override
     public int create_function(String name, Function f, int nArgs, int flags) throws SQLException {
-        throw new RuntimeException("create_function not implemented in WasmDB");
+        WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
+        int userData = UDFStore.registerFunction(f);
+        return exports.createFunction(dbPtr(), namePtrSize.ptr(), nArgs, flags, userData);
     }
 
     @Override

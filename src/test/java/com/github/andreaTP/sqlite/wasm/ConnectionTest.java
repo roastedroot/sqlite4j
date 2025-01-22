@@ -238,6 +238,7 @@ public class ConnectionTest {
         return tmp;
     }
 
+    // TODO: cahce shared is not working!
     @Test
     public void URIFilenames() throws SQLException {
         Connection conn1 =

@@ -59,6 +59,22 @@ public abstract class Function {
     long value = 0; // pointer sqlite3_value**
     int args = 0;
 
+    public void setContext(long context) {
+        this.context = context;
+    }
+
+    public void setValue(long value) {
+        this.value = value;
+    }
+
+    public long getValue() {
+        return value;
+    }
+
+    public void setArgs(int args) {
+        this.args = args;
+    }
+
     /**
      * Registers a given function with the connection.
      *
@@ -143,7 +159,7 @@ public abstract class Function {
      * Called by SQLite as a custom function. Should access arguments through <tt>value_*(int)</tt>,
      * return results with <tt>result(*)</tt> and throw errors with <tt>error(String)</tt>.
      */
-    protected abstract void xFunc() throws SQLException;
+    public abstract void xFunc() throws SQLException;
 
     /**
      * Returns the number of arguments passed to the function. Can only be called from
@@ -311,7 +327,7 @@ public abstract class Function {
         /**
          * @see Function#xFunc()
          */
-        protected final void xFunc() {}
+        public final void xFunc() {}
 
         /**
          * Defines the abstract aggregate callback function

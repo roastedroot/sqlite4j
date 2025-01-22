@@ -12,6 +12,13 @@ public class WasmDBExports {
 
     private static final int SQLITE_TRANSIENT = -1; // https://www.sqlite.org/c3ref/c_static.html
 
+    private static final int SQLITE_UTF8 = 1; /* IMP: R-37514-35566 */
+    private static final int SQLITE_UTF16LE = 2; /* IMP: R-03371-37637 */
+    private static final int SQLITE_UTF16BE = 3; /* IMP: R-51971-34154 */
+    private static final int SQLITE_UTF16 = 4; /* Use native byte order */
+    private static final int SQLITE_ANY = 5; /* Deprecated */
+    private static final int SQLITE_UTF16_ALIGNED = 8; /* sqlite3_create_collation only */
+
     private final Instance instance;
     private final ExportFunction realloc;
     private final ExportFunction malloc;
@@ -47,9 +54,24 @@ public class WasmDBExports {
     private final ExportFunction extendedErrcode;
     private final ExportFunction busyTimeout;
     private final ExportFunction version;
+    private final ExportFunction createFunction;
+    private final ExportFunction userData;
+    private final ExportFunction resultText;
+    private final ExportFunction resultLong;
+    private final ExportFunction resultDouble;
+    private final ExportFunction resultBlob;
+    private final ExportFunction valueDouble;
+    private final ExportFunction valueText;
+
+    private final int xFuncPtr;
+    private final int xDestroyPtr;
 
     public WasmDBExports(Instance instance) {
         this.instance = instance;
+
+        this.xFuncPtr = (int) instance.exports().function("xFuncPtr").apply()[0];
+        this.xDestroyPtr = (int) instance.exports().function("xDestroyPtr").apply()[0];
+
         this.realloc = instance.exports().function("realloc");
         this.malloc = instance.exports().function("malloc");
         this.free = instance.exports().function("free");
@@ -84,6 +106,14 @@ public class WasmDBExports {
         this.extendedErrcode = instance.exports().function("sqlite3_extended_errcode");
         this.busyTimeout = instance.exports().function("sqlite3_busy_timeout");
         this.version = instance.exports().function("sqlite3_libversion");
+        this.createFunction = instance.exports().function("sqlite3_create_function_v2");
+        this.userData = instance.exports().function("sqlite3_user_data");
+        this.resultText = instance.exports().function("sqlite3_result_text");
+        this.resultLong = instance.exports().function("sqlite3_result_int64");
+        this.resultDouble = instance.exports().function("sqlite3_result_double");
+        this.resultBlob = instance.exports().function("sqlite3_result_blob");
+        this.valueDouble = instance.exports().function("sqlite3_value_double");
+        this.valueText = instance.exports().function("sqlite3_value_text");
     }
 
     public int malloc(int size) {
@@ -274,5 +304,57 @@ public class WasmDBExports {
 
     public int version() {
         return (int) version.apply()[0];
+    }
+
+    //    gethandle(env, nativeDB),
+    //    name_bytes,            // function name
+    //    nArgs,                 // number of args
+    //    SQLITE_UTF16 | flags,  // preferred chars
+    //    udf,
+    //    &xFunc,
+    //    NULL,
+    //    NULL,
+    //    &free_udf_func         // Cleanup function
+    public int createFunction(int dbPtr, int namePtr, int nArgs, int flags, int userData) {
+        return (int)
+                createFunction
+                        .apply(
+                                dbPtr,
+                                namePtr,
+                                nArgs,
+                                SQLITE_UTF16 | flags,
+                                userData,
+                                xFuncPtr,
+                                0,
+                                0,
+                                xDestroyPtr)[0]; // freeUdf)
+    }
+
+    public int userData(int ctx) {
+        return (int) userData.apply(ctx)[0];
+    }
+
+    public void resultText(int context, int bytesPtr, int bytesLength) {
+        resultText.apply(context, bytesPtr, bytesLength, SQLITE_TRANSIENT);
+    }
+
+    public void resultLong(int context, long value) {
+        resultLong.apply(context, value);
+    }
+
+    public void resultDouble(int context, double value) {
+        resultDouble.apply(context, Value.doubleToLong(value));
+    }
+
+    public void resultBlob(int context, int bytesPtr, int bytesLength) {
+        resultBlob.apply(context, bytesPtr, bytesLength, SQLITE_TRANSIENT);
+    }
+
+    public double valueDouble(int valuePtr) {
+        return Value.longToDouble(valueDouble.apply(valuePtr)[0]);
+    }
+
+    public int valueText(int valuePtr) {
+        return (int) valueText.apply(valuePtr)[0];
     }
 }

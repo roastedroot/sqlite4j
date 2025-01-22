@@ -88,7 +88,7 @@ public class SQLiteJDBCLoaderTest {
                 "total",
                 new Function() {
                     @Override
-                    protected void xFunc() throws SQLException {
+                    public void xFunc() throws SQLException {
                         int sum = 0;
                         for (int i = 0; i < args(); i++) {
                             sum += value_int(i);

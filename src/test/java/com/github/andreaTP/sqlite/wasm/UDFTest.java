@@ -282,7 +282,7 @@ public class UDFTest {
                 "inform",
                 new Function() {
                     @Override
-                    protected void xFunc() throws SQLException {
+                    public void xFunc() throws SQLException {
                         gotTrigger = value_int(0);
                     }
                 });
@@ -517,7 +517,7 @@ public class UDFTest {
                     int sum = 0;
 
                     @Override
-                    protected void xFunc() {
+                    public void xFunc() {
                         try {
                             sum += value_int(1);
                         } catch (SQLException e) {
