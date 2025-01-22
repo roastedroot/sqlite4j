@@ -31,7 +31,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 export WASI_SDK_PATH=${SCRIPT_DIR}/wasi-sdk
 
-rm -f ${SCRIPT_DIR}libsqlite3.wasm
+rm -f ${SCRIPT_DIR}/libsqlite3.wasm
+rm -f ${SCRIPT_DIR}/libsqlite3-opt.wasm
 
 # rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite_wrapper.c
 # cp ${SCRIPT_DIR}/sqlite_wrapper.c ${SCRIPT_DIR}/sqlite-amalgamation/
@@ -47,16 +48,13 @@ cp ${SCRIPT_DIR}/sqlite_cfg.h ${SCRIPT_DIR}/sqlite-amalgamation/
         --target=wasm32-wasi \
         -o ../libsqlite3.wasm \
         sqlite3.c \
-        -D_HAVE_SQLITE_CONFIG_H \
-        -DSQLITE_CUSTOM_INCLUDE=sqlite_opt.h \
         -Wl,--export-all \
-        -Wl,--allow-undefined \
+        -Wl,--import-undefined \
         -Wl,--no-entry \
         -Wl,--initial-memory=327680 \
+        -Wl,--stack-first \
         -mnontrapping-fptoint -msign-ext \
-	    -fno-stack-protector -fno-stack-clash-protection \
-	    -Wl,--stack-first \
-	    -Wl,--import-undefined \
+        -fno-stack-protector -fno-stack-clash-protection \
         -mmutable-globals -mmultivalue \
 	    -mbulk-memory -mreference-types \
         -mexec-model=reactor \
