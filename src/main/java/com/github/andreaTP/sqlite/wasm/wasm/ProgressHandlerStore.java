@@ -7,6 +7,7 @@ import java.util.ArrayDeque;
 // Instead of it being static we can have a specific UDFStore per Database
 public class ProgressHandlerStore {
     // We have only one progress handler available per connection
+    // TODO: instantiate it in WasmDB and this can be a single slot
     private static int MIN_CAPACITY = 1;
     private static int count;
     private static ArrayDeque<Integer> emptySlots = new ArrayDeque<>();
