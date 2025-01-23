@@ -71,6 +71,11 @@ public abstract class Function {
         return value;
     }
 
+    public long getValueArg(int arg) {
+        // value is a pointer to the 0 element of an array of 'int'
+        return value + (arg * 4);
+    }
+
     public void setArgs(int args) {
         this.args = args;
     }
@@ -336,7 +341,7 @@ public abstract class Function {
          * @see <a
          *     href="https://www.sqlite.org/c3ref/aggregate_context.html">https://www.sqlite.org/c3ref/aggregate_context.html</a>
          */
-        protected abstract void xStep() throws SQLException;
+        public abstract void xStep() throws SQLException;
 
         /**
          * Defines the abstract aggregate callback function
@@ -345,7 +350,7 @@ public abstract class Function {
          * @see <a
          *     href="https://www.sqlite.org/c3ref/aggregate_context.html">https://www.sqlite.org/c3ref/aggregate_context.html</a>
          */
-        protected abstract void xFinal() throws SQLException;
+        public abstract void xFinal() throws SQLException;
 
         /**
          * @see java.lang.Object#clone()
@@ -368,7 +373,7 @@ public abstract class Function {
          * @see <a
          *     href="https://www.sqlite.org/windowfunctions.html#user_defined_aggregate_window_functions">https://www.sqlite.org/windowfunctions.html#user_defined_aggregate_window_functions</a>
          */
-        protected abstract void xInverse() throws SQLException;
+        public abstract void xInverse() throws SQLException;
 
         /**
          * Defines the abstract window callback function
@@ -377,6 +382,6 @@ public abstract class Function {
          * @see <a
          *     href="https://www.sqlite.org/windowfunctions.html#user_defined_aggregate_window_functions">https://www.sqlite.org/windowfunctions.html#user_defined_aggregate_window_functions</a>
          */
-        protected abstract void xValue() throws SQLException;
+        public abstract void xValue() throws SQLException;
     }
 }

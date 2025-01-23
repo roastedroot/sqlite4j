@@ -55,6 +55,7 @@ public class WasmDBExports {
     private final ExportFunction busyTimeout;
     private final ExportFunction version;
     private final ExportFunction createFunction;
+    private final ExportFunction createFunctionAggregate;
     private final ExportFunction userData;
     private final ExportFunction resultText;
     private final ExportFunction resultLong;
@@ -64,14 +65,25 @@ public class WasmDBExports {
     private final ExportFunction valueDouble;
     private final ExportFunction valueText;
     private final ExportFunction valueInt;
+    private final ExportFunction valueBlob;
+    private final ExportFunction valueBytes;
+    private final ExportFunction valueLong;
 
     private final int xFuncPtr;
+    private final int xStepPtr;
+    private final int xFinalPtr;
+    private final int xValuePtr;
+    private final int xInversePtr;
     private final int xDestroyPtr;
 
     public WasmDBExports(Instance instance) {
         this.instance = instance;
 
         this.xFuncPtr = (int) instance.exports().function("xFuncPtr").apply()[0];
+        this.xStepPtr = (int) instance.exports().function("xStepPtr").apply()[0];
+        this.xFinalPtr = (int) instance.exports().function("xFinalPtr").apply()[0];
+        this.xValuePtr = (int) instance.exports().function("xValuePtr").apply()[0];
+        this.xInversePtr = (int) instance.exports().function("xInversePtr").apply()[0];
         this.xDestroyPtr = (int) instance.exports().function("xDestroyPtr").apply()[0];
 
         this.realloc = instance.exports().function("realloc");
@@ -109,6 +121,8 @@ public class WasmDBExports {
         this.busyTimeout = instance.exports().function("sqlite3_busy_timeout");
         this.version = instance.exports().function("sqlite3_libversion");
         this.createFunction = instance.exports().function("sqlite3_create_function_v2");
+        this.createFunctionAggregate =
+                instance.exports().function("sqlite3_create_window_function");
         this.userData = instance.exports().function("sqlite3_user_data");
         this.resultText = instance.exports().function("sqlite3_result_text");
         this.resultLong = instance.exports().function("sqlite3_result_int64");
@@ -118,6 +132,9 @@ public class WasmDBExports {
         this.valueDouble = instance.exports().function("sqlite3_value_double");
         this.valueText = instance.exports().function("sqlite3_value_text");
         this.valueInt = instance.exports().function("sqlite3_value_int");
+        this.valueLong = instance.exports().function("sqlite3_value_int64");
+        this.valueBlob = instance.exports().function("sqlite3_value_blob");
+        this.valueBytes = instance.exports().function("sqlite3_value_bytes");
     }
 
     public int malloc(int size) {
@@ -334,6 +351,28 @@ public class WasmDBExports {
                                 xDestroyPtr)[0]; // freeUdf)
     }
 
+    public int createFunctionAggregate(
+            int dbPtr, int namePtr, int nArgs, int flags, int userData, boolean isWindow) {
+        return (int)
+                createFunctionAggregate
+                        .apply(
+                                dbPtr,
+                                namePtr,
+                                nArgs,
+                                SQLITE_UTF16 | flags,
+                                userData,
+                                xStepPtr,
+                                xFinalPtr,
+                                (isWindow) ? xValuePtr : 0,
+                                (isWindow) ? xInversePtr : 0,
+                                xDestroyPtr)[0]; // freeUdf)
+    }
+
+    public int createNullFunction(int dbPtr, int namePtr) {
+        return (int)
+                createFunction.apply(dbPtr, namePtr, 0, SQLITE_UTF16, 0, 0, 0, 0, 0)[0]; // freeUdf)
+    }
+
     public int userData(int ctx) {
         return (int) userData.apply(ctx)[0];
     }
@@ -368,5 +407,17 @@ public class WasmDBExports {
 
     public int valueInt(int valuePtr) {
         return (int) valueInt.apply(valuePtr)[0];
+    }
+
+    public long valueLong(int valuePtr) {
+        return valueLong.apply(valuePtr)[0];
+    }
+
+    public int valueBlob(int valuePtr) {
+        return (int) valueBlob.apply(valuePtr)[0];
+    }
+
+    public int valueBytes(int valuePtr) {
+        return (int) valueBytes.apply(valuePtr)[0];
     }
 }

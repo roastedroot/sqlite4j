@@ -89,6 +89,40 @@ public class WasmDB extends DB {
                                         .addFunction(
                                                 new HostFunction(
                                                         "env",
+                                                        "xStep",
+                                                        List.of(
+                                                                ValueType.I32,
+                                                                ValueType.I32,
+                                                                ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> xStep(args)))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xFinal",
+                                                        List.of(ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> xFinal(args)))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xValue",
+                                                        List.of(ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> xValue(args)))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xInverse",
+                                                        List.of(
+                                                                ValueType.I32,
+                                                                ValueType.I32,
+                                                                ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> xInverse(args)))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
                                                         "xDestroy",
                                                         List.of(ValueType.I32),
                                                         List.of(),
@@ -106,13 +140,46 @@ public class WasmDB extends DB {
         return null;
     }
 
+    private long[] xFinal(long[] args) {
+        int ctx = (int) args[0];
+
+        int funIdx = exports.userData(ctx);
+        Function f = UDFStore.get(funIdx);
+
+        f.setContext(ctx);
+
+        try {
+            ((Function.Aggregate) f).xFinal();
+            // TODO: decide how to handle the checked exception thrown here
+        } catch (SQLException e) {
+            throw new RuntimeException("wrapped SQLException", e);
+        }
+        return null;
+    }
+
+    private long[] xValue(long[] args) {
+        int ctx = (int) args[0];
+
+        int funIdx = exports.userData(ctx);
+        Function f = UDFStore.get(funIdx);
+
+        f.setContext(ctx);
+
+        try {
+            ((Function.Window) f).xValue();
+            // TODO: decide how to handle the checked exception thrown here
+        } catch (SQLException e) {
+            throw new RuntimeException("wrapped SQLException", e);
+        }
+        return null;
+    }
+
     private long[] xFunc(long[] args) {
         int ctx = (int) args[0];
         int argN = (int) args[1];
         int value = (int) args[2];
 
         int funIdx = exports.userData(ctx);
-
         Function f = UDFStore.get(funIdx);
 
         // TODO: verify if all of this is needed ...
@@ -122,6 +189,50 @@ public class WasmDB extends DB {
 
         try {
             f.xFunc();
+            // TODO: decide how to handle the checked exception thrown here
+        } catch (SQLException e) {
+            throw new RuntimeException("wrapped SQLException", e);
+        }
+        return null;
+    }
+
+    private long[] xStep(long[] args) {
+        int ctx = (int) args[0];
+        int argN = (int) args[1];
+        int value = (int) args[2];
+
+        int funIdx = exports.userData(ctx);
+        Function f = UDFStore.get(funIdx);
+
+        // TODO: verify if all of this is needed ...
+        f.setContext(ctx);
+        f.setValue(value);
+        f.setArgs(argN);
+
+        try {
+            ((Function.Aggregate) f).xStep();
+            // TODO: decide how to handle the checked exception thrown here
+        } catch (SQLException e) {
+            throw new RuntimeException("wrapped SQLException", e);
+        }
+        return null;
+    }
+
+    private long[] xInverse(long[] args) {
+        int ctx = (int) args[0];
+        int argN = (int) args[1];
+        int value = (int) args[2];
+
+        int funIdx = exports.userData(ctx);
+        Function f = UDFStore.get(funIdx);
+
+        // TODO: verify if all of this is needed ...
+        f.setContext(ctx);
+        f.setValue(value);
+        f.setArgs(argN);
+
+        try {
+            ((Function.Window) f).xInverse();
             // TODO: decide how to handle the checked exception thrown here
         } catch (SQLException e) {
             throw new RuntimeException("wrapped SQLException", e);
@@ -454,7 +565,7 @@ public class WasmDB extends DB {
 
     @Override
     public String value_text(Function f, int arg) throws SQLException {
-        int valuePtrPtr = exports.ptr((int) f.getValue());
+        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
         int txtPtr = exports.valueText(valuePtrPtr);
         // TODO: count the bytes and do this more acurately
         String result = instance.memory().readCString(txtPtr);
@@ -464,23 +575,29 @@ public class WasmDB extends DB {
 
     @Override
     public byte[] value_blob(Function f, int arg) throws SQLException {
-        throw new RuntimeException("value_blob not implemented in WasmDB");
+        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
+        int blobPtr = exports.valueBlob(valuePtrPtr);
+        int length = exports.valueBytes(valuePtrPtr);
+        byte[] blob = instance.memory().readBytes(blobPtr, length);
+
+        return blob;
     }
 
     @Override
     public double value_double(Function f, int arg) throws SQLException {
-        int valuePtrPtr = exports.ptr((int) f.getValue());
+        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
         return exports.valueDouble(valuePtrPtr);
     }
 
     @Override
     public long value_long(Function f, int arg) throws SQLException {
-        throw new RuntimeException("value_long not implemented in WasmDB");
+        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
+        return exports.valueLong(valuePtrPtr);
     }
 
     @Override
     public int value_int(Function f, int arg) throws SQLException {
-        int valuePtrPtr = exports.ptr((int) f.getValue());
+        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
         return exports.valueInt(valuePtrPtr);
     }
 
@@ -493,12 +610,22 @@ public class WasmDB extends DB {
     public int create_function(String name, Function f, int nArgs, int flags) throws SQLException {
         WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
         int userData = UDFStore.registerFunction(f);
-        return exports.createFunction(dbPtr(), namePtrSize.ptr(), nArgs, flags, userData);
+
+        if (f instanceof Function.Aggregate) {
+            boolean isWindow = f instanceof Function.Window;
+            return exports.createFunctionAggregate(
+                    dbPtr(), namePtrSize.ptr(), nArgs, flags, userData, isWindow);
+        } else {
+            return exports.createFunction(dbPtr(), namePtrSize.ptr(), nArgs, flags, userData);
+        }
     }
 
     @Override
     public int destroy_function(String name) throws SQLException {
-        throw new RuntimeException("destroy_function not implemented in WasmDB");
+        WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
+        int result = exports.createNullFunction(dbPtr(), namePtrSize.ptr());
+        exports.free(namePtrSize.ptr());
+        return result;
     }
 
     @Override

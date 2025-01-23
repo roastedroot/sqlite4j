@@ -15,6 +15,46 @@ extern void* xFuncPtr() {
     return &xFunc;
 }
 
+extern void xStep(sqlite3_context *context, int args, sqlite3_value** value)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xStep"),
+));
+
+extern void* xStepPtr() {
+    return &xStep;
+}
+
+extern void xFinal(sqlite3_context *context)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xFinal"),
+));
+
+extern void* xFinalPtr() {
+    return &xFinal;
+}
+
+extern void xValue(sqlite3_context *context)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xValue"),
+));
+
+extern void* xValuePtr() {
+    return &xValue;
+}
+
+extern void xInverse(sqlite3_context *context, int args, sqlite3_value** value)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xInverse"),
+));
+
+extern void* xInversePtr() {
+    return &xInverse;
+}
+
 extern void xDestroy(void *userData)
 __attribute__((
     __import_module__("env"),

@@ -3,6 +3,8 @@ package com.github.andreaTP.sqlite.wasm.wasm;
 import com.github.andreaTP.sqlite.wasm.Function;
 import java.util.ArrayDeque;
 
+// TODO: verify
+// Instead of it being static we can have a specific UDFStore per Database
 public class UDFStore {
 
     private static int MIN_CAPACITY = 8;
