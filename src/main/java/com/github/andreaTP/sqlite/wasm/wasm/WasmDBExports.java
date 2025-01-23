@@ -58,10 +58,12 @@ public class WasmDBExports {
     private final ExportFunction userData;
     private final ExportFunction resultText;
     private final ExportFunction resultLong;
+    private final ExportFunction resultInt;
     private final ExportFunction resultDouble;
     private final ExportFunction resultBlob;
     private final ExportFunction valueDouble;
     private final ExportFunction valueText;
+    private final ExportFunction valueInt;
 
     private final int xFuncPtr;
     private final int xDestroyPtr;
@@ -110,10 +112,12 @@ public class WasmDBExports {
         this.userData = instance.exports().function("sqlite3_user_data");
         this.resultText = instance.exports().function("sqlite3_result_text");
         this.resultLong = instance.exports().function("sqlite3_result_int64");
+        this.resultInt = instance.exports().function("sqlite3_result_int");
         this.resultDouble = instance.exports().function("sqlite3_result_double");
         this.resultBlob = instance.exports().function("sqlite3_result_blob");
         this.valueDouble = instance.exports().function("sqlite3_value_double");
         this.valueText = instance.exports().function("sqlite3_value_text");
+        this.valueInt = instance.exports().function("sqlite3_value_int");
     }
 
     public int malloc(int size) {
@@ -338,6 +342,10 @@ public class WasmDBExports {
         resultText.apply(context, bytesPtr, bytesLength, SQLITE_TRANSIENT);
     }
 
+    public void resultInt(int context, int value) {
+        resultInt.apply(context, value);
+    }
+
     public void resultLong(int context, long value) {
         resultLong.apply(context, value);
     }
@@ -356,5 +364,9 @@ public class WasmDBExports {
 
     public int valueText(int valuePtr) {
         return (int) valueText.apply(valuePtr)[0];
+    }
+
+    public int valueInt(int valuePtr) {
+        return (int) valueInt.apply(valuePtr)[0];
     }
 }

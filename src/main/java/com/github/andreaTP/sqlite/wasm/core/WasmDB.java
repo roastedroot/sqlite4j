@@ -444,7 +444,7 @@ public class WasmDB extends DB {
 
     @Override
     public void result_int(long context, int val) throws SQLException {
-        throw new RuntimeException("result_int not implemented in WasmDB");
+        exports.resultInt((int) context, val);
     }
 
     @Override
@@ -480,7 +480,8 @@ public class WasmDB extends DB {
 
     @Override
     public int value_int(Function f, int arg) throws SQLException {
-        throw new RuntimeException("value_int not implemented in WasmDB");
+        int valuePtrPtr = exports.ptr((int) f.getValue());
+        return exports.valueInt(valuePtrPtr);
     }
 
     @Override
