@@ -64,3 +64,13 @@ __attribute__((
 extern void* xDestroyPtr() {
     return &xDestroy;
 }
+
+extern int xProgress(void *userData)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xProgress"),
+));
+
+extern void* xProgressPtr() {
+    return &xProgress;
+}

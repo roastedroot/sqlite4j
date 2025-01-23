@@ -68,6 +68,7 @@ public class WasmDBExports {
     private final ExportFunction valueBlob;
     private final ExportFunction valueBytes;
     private final ExportFunction valueLong;
+    private final ExportFunction progressHandler;
 
     private final int xFuncPtr;
     private final int xStepPtr;
@@ -75,6 +76,7 @@ public class WasmDBExports {
     private final int xValuePtr;
     private final int xInversePtr;
     private final int xDestroyPtr;
+    private final int xProgressPtr;
 
     public WasmDBExports(Instance instance) {
         this.instance = instance;
@@ -85,6 +87,7 @@ public class WasmDBExports {
         this.xValuePtr = (int) instance.exports().function("xValuePtr").apply()[0];
         this.xInversePtr = (int) instance.exports().function("xInversePtr").apply()[0];
         this.xDestroyPtr = (int) instance.exports().function("xDestroyPtr").apply()[0];
+        this.xProgressPtr = (int) instance.exports().function("xProgressPtr").apply()[0];
 
         this.realloc = instance.exports().function("realloc");
         this.malloc = instance.exports().function("malloc");
@@ -135,6 +138,8 @@ public class WasmDBExports {
         this.valueLong = instance.exports().function("sqlite3_value_int64");
         this.valueBlob = instance.exports().function("sqlite3_value_blob");
         this.valueBytes = instance.exports().function("sqlite3_value_bytes");
+
+        this.progressHandler = instance.exports().function("sqlite3_progress_handler");
     }
 
     public int malloc(int size) {
@@ -419,5 +424,9 @@ public class WasmDBExports {
 
     public int valueBytes(int valuePtr) {
         return (int) valueBytes.apply(valuePtr)[0];
+    }
+
+    public void progressHandler(int dbPtr, int vmCalls, int userData) {
+        progressHandler.apply(dbPtr, vmCalls, xProgressPtr, userData);
     }
 }

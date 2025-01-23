@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.github.andreaTP.sqlite.wasm.core.DB;
+import com.github.andreaTP.sqlite.wasm.core.WasmDBHelper;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +48,7 @@ public class ProgressHandlerTest {
                 1,
                 new ProgressHandler() {
                     @Override
-                    protected int progress() {
+                    public int progress() {
                         calls[0]++;
                         return 0;
                     }
@@ -63,7 +65,7 @@ public class ProgressHandlerTest {
                 1,
                 new ProgressHandler() {
                     @Override
-                    protected int progress() {
+                    public int progress() {
                         calls[0]++;
                         return 0;
                     }
@@ -85,7 +87,7 @@ public class ProgressHandlerTest {
                     1,
                     new ProgressHandler() {
                         @Override
-                        protected int progress() {
+                        public int progress() {
                             return 1;
                         }
                     });
@@ -109,21 +111,21 @@ public class ProgressHandlerTest {
         SQLiteConnection sqliteConnection = (SQLiteConnection) conn;
         final DB database = sqliteConnection.getDatabase();
         setDummyHandler();
-        // Assertions.assertThat(NativeDBHelper.getProgressHandler(database)).isNotEqualTo(0);
-        // ProgressHandler.clearHandler(conn);
-        // assertThat(NativeDBHelper.getProgressHandler(database)).isEqualTo(0);
-        // ProgressHandler.clearHandler(conn);
+        Assertions.assertThat(WasmDBHelper.getProgressHandler(database)).isNotEqualTo(0);
+        ProgressHandler.clearHandler(conn);
+        assertThat(WasmDBHelper.getProgressHandler(database)).isEqualTo(0);
+        ProgressHandler.clearHandler(conn);
 
-        // setDummyHandler();
-        // assertThat(NativeDBHelper.getProgressHandler(database)).isNotEqualTo(0);
-        // ProgressHandler.setHandler(conn, 1, null);
-        // assertThat(NativeDBHelper.getProgressHandler(database)).isEqualTo(0);
-        // ProgressHandler.setHandler(conn, 1, null);
+        setDummyHandler();
+        assertThat(WasmDBHelper.getProgressHandler(database)).isNotEqualTo(0);
+        ProgressHandler.setHandler(conn, 1, null);
+        assertThat(WasmDBHelper.getProgressHandler(database)).isEqualTo(0);
+        ProgressHandler.setHandler(conn, 1, null);
 
-        // setDummyHandler();
-        // assertThat(NativeDBHelper.getProgressHandler(database)).isNotEqualTo(0);
-        // conn.close();
-        // assertThat(NativeDBHelper.getProgressHandler(database)).isEqualTo(0);
+        setDummyHandler();
+        assertThat(WasmDBHelper.getProgressHandler(database)).isNotEqualTo(0);
+        conn.close();
+        assertThat(WasmDBHelper.getProgressHandler(database)).isEqualTo(0);
     }
 
     private void setDummyHandler() throws SQLException {
@@ -132,7 +134,7 @@ public class ProgressHandlerTest {
                 1,
                 new ProgressHandler() {
                     @Override
-                    protected int progress() {
+                    public int progress() {
                         return 0;
                     }
                 });

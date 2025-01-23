@@ -37,5 +37,5 @@ public abstract class ProgressHandler {
         sqliteConnection.getDatabase().clear_progress_handler();
     }
 
-    protected abstract int progress() throws SQLException;
+    public abstract int progress() throws SQLException;
 }

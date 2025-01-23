@@ -14,6 +14,7 @@ import com.github.andreaTP.sqlite.wasm.Function;
 import com.github.andreaTP.sqlite.wasm.ProgressHandler;
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
 import com.github.andreaTP.sqlite.wasm.SQLiteModule;
+import com.github.andreaTP.sqlite.wasm.wasm.ProgressHandlerStore;
 import com.github.andreaTP.sqlite.wasm.wasm.UDFStore;
 import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
 import com.google.common.jimfs.Configuration;
@@ -127,10 +128,34 @@ public class WasmDB extends DB {
                                                         List.of(ValueType.I32),
                                                         List.of(),
                                                         (inst, args) -> xDestroy(args)))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xProgress",
+                                                        List.of(ValueType.I32),
+                                                        List.of(ValueType.I32),
+                                                        (inst, args) -> xProgress(args)))
                                         .build())
                         .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
                         .build();
         exports = new WasmDBExports(instance);
+    }
+
+    // https://www.sqlite.org/c3ref/progress_handler.html
+    // only 1 progress handler at the time
+    // TODO: do we need the Store at all?
+    private long[] xProgress(long[] args) {
+        int userData = (int) args[0];
+
+        ProgressHandler f = ProgressHandlerStore.get(userData);
+
+        try {
+            int result = f.progress();
+            return new long[] {result};
+            // TODO: decide how to handle the checked exception thrown here
+        } catch (SQLException e) {
+            throw new RuntimeException("wrapped SQLException", e);
+        }
     }
 
     private long[] xDestroy(long[] args) {
@@ -383,6 +408,8 @@ public class WasmDB extends DB {
 
     @Override
     protected void _close() throws SQLException {
+        ProgressHandlerStore.free(progressHandlerIdx);
+
         exports.close(dbPtr());
         exports.free(dbPtrPtr);
         // TODO: when can we cleanup those resources?
@@ -679,15 +706,21 @@ public class WasmDB extends DB {
         return exports.limit(dbPtr(), id, value);
     }
 
+    // only one per connection, verify!
+    private int progressHandlerIdx = 0;
+
     @Override
     public void register_progress_handler(int vmCalls, ProgressHandler progressHandler)
             throws SQLException {
-        throw new RuntimeException("register_progress_handler not implemented in WasmDB");
+        progressHandlerIdx = ProgressHandlerStore.registerProgressHandler(progressHandler);
+        exports.progressHandler(dbPtr(), vmCalls, progressHandlerIdx);
     }
 
     @Override
     public void clear_progress_handler() throws SQLException {
-        throw new RuntimeException("clear_progress_handler not implemented in WasmDB");
+        ProgressHandlerStore.free(progressHandlerIdx);
+        progressHandlerIdx = 0;
+        exports.progressHandler(dbPtr(), 0, 0);
     }
 
     @Override
@@ -713,5 +746,18 @@ public class WasmDB extends DB {
     @Override
     public void deserialize(String schema, byte[] buff) throws SQLException {
         throw new RuntimeException("deserialize not implemented in WasmDB");
+    }
+
+    /**
+     * Getter for native pointer to validate memory is properly cleaned up in unit tests
+     *
+     * @return a native pointer to validate memory is properly cleaned up in unit tests
+     */
+    long getProgressHandler() {
+        if (ProgressHandlerStore.get(progressHandlerIdx) != null) {
+            return 1L;
+        } else {
+            return 0L;
+        }
     }
 }

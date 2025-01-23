@@ -9,8 +9,7 @@ public class WasmDBHelper {
      * @return the pointer of the progress handler
      */
     public static long getProgressHandler(DB nativeDB) {
-        // return ((WasmDB) nativeDB).getProgressHandler();
-        return 0;
+        return ((WasmDB) nativeDB).getProgressHandler();
     }
 
     /**
