@@ -295,7 +295,11 @@ public class WasmDB extends DB {
                     Files.createDirectories(dest);
                     java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException e) {
-                    throw new SQLException("Failed to map to memory the file: " + filename, e);
+                    SQLException msg =
+                            DB.newSQLException(
+                                    SQLITE_CANTOPEN,
+                                    "Failed to map to memory the file: " + filename);
+                    throw new SQLException(msg.getMessage(), e);
                 }
             } else {
                 try {
@@ -497,14 +501,14 @@ public class WasmDB extends DB {
 
         byte[] bytes = instance.memory().readBytes(txtPtr, txtLength);
         String result;
-        // TODO: verify that the fallback should be here or not ...
-        if (bytes.length > 0 && bytes[bytes.length - 1] == '\0') {
-            byte[] resBytes = new byte[bytes.length - 1];
-            System.arraycopy(bytes, 0, resBytes, 0, bytes.length - 1);
-            result = new String(resBytes, StandardCharsets.UTF_8);
-        } else {
-            result = new String(bytes, StandardCharsets.UTF_8);
-        }
+        //        // TODO: verify that the fallback should be here or not ...
+        //        if (bytes.length > 0 && bytes[bytes.length - 1] == '\0') {
+        //            byte[] resBytes = new byte[bytes.length - 1];
+        //            System.arraycopy(bytes, 0, resBytes, 0, bytes.length - 1);
+        //            result = new String(resBytes, StandardCharsets.UTF_8);
+        //        } else {
+        result = new String(bytes, StandardCharsets.UTF_8);
+        //        }
         // TODO: verify if this result doesn't need a free ...
         // EXPORTS.free(txtPtr);
         return result;
@@ -610,7 +614,6 @@ public class WasmDB extends DB {
     public String value_text(Function f, int arg) throws SQLException {
         int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
         int txtPtr = exports.valueText(valuePtrPtr);
-        // TODO: count the bytes and do this more acurately
         String result = instance.memory().readCString(txtPtr);
         exports.free(txtPtr);
         return result;
