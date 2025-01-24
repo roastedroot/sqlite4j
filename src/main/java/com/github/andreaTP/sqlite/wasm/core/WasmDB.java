@@ -310,21 +310,14 @@ public class WasmDB extends DB {
         }
 
         this.dbPtrPtr = exports.malloc(PTR_SIZE);
-        int dbNamePtr = exports.allocCString(filename).ptr();
+        int dbNamePtr = exports.allocCString(filename);
 
         int res = exports.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
         this.dbPtr = instance.memory().readInt(this.dbPtrPtr);
         if (res != SQLITE_OK) {
-            int errCode = exports.extendedErrorcode(dbPtr);
-            String errmsg = errmsg();
-            exports.close(dbPtr);
-            throw new SQLException(
-                    "Failed to open database "
-                            + filename
-                            + ", error code: "
-                            + errCode
-                            + ", error message: "
-                            + errmsg);
+            int errCode = exports.extendedErrorcode(dbPtr());
+            exports.close(dbPtr());
+            throw DB.newSQLException(errCode, errmsg());
         }
         exports.free(dbNamePtr);
     }
@@ -332,10 +325,15 @@ public class WasmDB extends DB {
     @Override
     protected SafeStmtPtr prepare(String sql) throws SQLException {
         int stmtPtrPtr = exports.malloc(PTR_SIZE);
-        WasmDBExports.StringPtrSize str = exports.allocCString(sql);
+        WasmDBExports.StringPtrSize str = exports.allocString(sql);
 
-        exports.prepareV2(dbPtr(), str.ptr(), str.size(), stmtPtrPtr, 0);
+        int res = exports.prepareV2(dbPtr(), str.ptr(), str.size(), stmtPtrPtr, 0);
         exports.free(str.ptr());
+        if (res != SQLITE_OK) {
+            int errCode = exports.extendedErrorcode(dbPtr());
+            exports.close(dbPtr());
+            throw DB.newSQLException(errCode, errmsg());
+        }
 
         return new SafeStmtPtr(this, stmtPtrPtr);
     }
@@ -349,24 +347,23 @@ public class WasmDB extends DB {
 
     @Override
     public int step(long stmtPtrPtr) throws SQLException {
-        return exports.step(exports.ptr((int) stmtPtrPtr));
+        int result = exports.step(exports.ptr((int) stmtPtrPtr));
+        // TODO: verify if this is the only place where this should happen
+        if (result != SQLITE_OK) {
+            return exports.extendedErrorcode(dbPtr());
+        }
+        return result;
     }
 
     @Override
     public int _exec(String sql) throws SQLException {
-        int sqlBytesPtr = exports.allocCString(sql).ptr();
+        int sqlBytesPtr = exports.allocCString(sql);
 
         int status = exports.exec(dbPtr(), sqlBytesPtr, 0, 0, 0);
         exports.free(sqlBytesPtr);
         if (status != SQLITE_OK) {
-            String errmsg = errmsg();
-            throw new SQLException(
-                    "Failed to exec "
-                            + sql
-                            + ", returned error code: "
-                            + status
-                            + ", error message: "
-                            + errmsg);
+            int errCode = exports.extendedErrorcode(dbPtr());
+            throw DB.newSQLException(errCode, errmsg());
         }
 
         return status;
@@ -555,7 +552,7 @@ public class WasmDB extends DB {
 
     @Override
     int bind_text(long stmtPtrPtr, int pos, String v) throws SQLException {
-        WasmDBExports.StringPtrSize str = exports.allocCString(v);
+        WasmDBExports.StringPtrSize str = exports.allocString(v);
         int result = exports.bindText(exports.ptr((int) stmtPtrPtr), pos, str.ptr(), str.size());
         exports.free(str.ptr());
         return result;
@@ -577,7 +574,7 @@ public class WasmDB extends DB {
 
     @Override
     public void result_text(long context, String val) throws SQLException {
-        WasmDBExports.StringPtrSize txt = exports.allocCString(val);
+        WasmDBExports.StringPtrSize txt = exports.allocString(val);
         exports.resultText((int) context, txt.ptr(), txt.size());
     }
 
@@ -655,24 +652,24 @@ public class WasmDB extends DB {
     // TODO: seems like we need a synchronized from BusyHandlerTest.testMultiThreaded
     @Override
     public int create_function(String name, Function f, int nArgs, int flags) throws SQLException {
-        WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
+        int namePtr = exports.allocCString(name);
         int userData = UDFStore.registerFunction(f);
 
         if (f instanceof Function.Aggregate) {
             boolean isWindow = f instanceof Function.Window;
             return exports.createFunctionAggregate(
-                    dbPtr(), namePtrSize.ptr(), nArgs, flags, userData, isWindow);
+                    dbPtr(), namePtr, nArgs, flags, userData, isWindow);
         } else {
-            return exports.createFunction(dbPtr(), namePtrSize.ptr(), nArgs, flags, userData);
+            return exports.createFunction(dbPtr(), namePtr, nArgs, flags, userData);
         }
     }
 
     @Override
     public int destroy_function(String name) throws SQLException {
-        WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
-        int result = exports.createNullFunction(dbPtr(), namePtrSize.ptr());
+        int namePtr = exports.allocCString(name);
+        int result = exports.createNullFunction(dbPtr(), namePtr);
         // TODO: implement free from UDFStore based on name
-        exports.free(namePtrSize.ptr());
+        exports.free(namePtr);
         return result;
     }
 

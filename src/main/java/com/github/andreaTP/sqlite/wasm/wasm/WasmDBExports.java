@@ -176,14 +176,23 @@ public class WasmDBExports {
         }
     }
 
-    public StringPtrSize allocCString(String str) {
+    // without checking the trailing 0
+    public StringPtrSize allocString(String str) {
+        byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+        int strBytesPtr = malloc(bytes.length);
+        instance.memory().write(strBytesPtr, bytes);
+        return new StringPtrSize(strBytesPtr, bytes.length);
+    }
+
+    // with trailing 0
+    public int allocCString(String str) {
         byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
         byte[] strBytes = new byte[bytes.length + 1];
         int strBytesPtr = malloc(strBytes.length);
         System.arraycopy(bytes, 0, strBytes, 0, bytes.length);
         strBytes[bytes.length] = '\0';
         instance.memory().write(strBytesPtr, strBytes);
-        return new StringPtrSize(strBytesPtr, strBytes.length);
+        return strBytesPtr;
     }
 
     //    const char *filename,   /* Database filename (UTF-8) */
