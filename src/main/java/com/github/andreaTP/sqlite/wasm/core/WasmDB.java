@@ -37,6 +37,8 @@ public class WasmDB extends DB {
     private final WasiPreview1 wasiPreview1;
     private final WasmDBExports exports;
 
+    private final UDFStore UDFstore;
+
     // TODO: double-check proper cleanup of resources
     private final FileSystem fs;
 
@@ -55,6 +57,9 @@ public class WasmDB extends DB {
             throws SQLException {
         super(url, fileName, config);
         this.fs = fs;
+
+        // TODO: move this logic to another place
+        // TODO: separte the concerns around the FileSystem when things are more stabilized
         Path target = fs.getPath("/");
         try {
             if (!java.nio.file.Files.exists(target)) {
@@ -63,6 +68,8 @@ public class WasmDB extends DB {
         } catch (IOException e) {
             throw new RuntimeException("Failed to create directory on the in-memory fs", e);
         }
+
+        this.UDFstore = new UDFStore();
 
         WasiOptions wasiOpts =
                 WasiOptions.builder()
@@ -160,7 +167,7 @@ public class WasmDB extends DB {
     private long[] xDestroy(long[] args) {
         int funIdx = (int) args[0];
 
-        UDFStore.free(funIdx);
+        UDFstore.free(funIdx);
         return null;
     }
 
@@ -168,7 +175,7 @@ public class WasmDB extends DB {
         int ctx = (int) args[0];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFStore.get(funIdx);
+        Function f = UDFstore.get(funIdx);
 
         f.setContext(ctx);
 
@@ -185,7 +192,7 @@ public class WasmDB extends DB {
         int ctx = (int) args[0];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFStore.get(funIdx);
+        Function f = UDFstore.get(funIdx);
 
         f.setContext(ctx);
 
@@ -204,7 +211,7 @@ public class WasmDB extends DB {
         int value = (int) args[2];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFStore.get(funIdx);
+        Function f = UDFstore.get(funIdx);
 
         // TODO: verify if all of this is needed ...
         f.setContext(ctx);
@@ -226,7 +233,7 @@ public class WasmDB extends DB {
         int value = (int) args[2];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFStore.get(funIdx);
+        Function f = UDFstore.get(funIdx);
 
         // TODO: verify if all of this is needed ...
         f.setContext(ctx);
@@ -248,7 +255,7 @@ public class WasmDB extends DB {
         int value = (int) args[2];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFStore.get(funIdx);
+        Function f = UDFstore.get(funIdx);
 
         // TODO: verify if all of this is needed ...
         f.setContext(ctx);
@@ -638,7 +645,7 @@ public class WasmDB extends DB {
     @Override
     public int create_function(String name, Function f, int nArgs, int flags) throws SQLException {
         WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
-        int userData = UDFStore.registerFunction(f);
+        int userData = UDFstore.registerFunction(f);
 
         if (f instanceof Function.Aggregate) {
             boolean isWindow = f instanceof Function.Window;
