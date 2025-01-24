@@ -47,6 +47,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
@@ -73,6 +74,7 @@ public class MultipleClassLoaderTest {
     }
 
     @Test
+    @Disabled("With WASM there is no initialize method to be called sync")
     public void multipleClassLoader() throws Throwable {
         // Get current classpath
         String[] stringUrls =

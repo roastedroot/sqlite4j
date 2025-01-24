@@ -44,8 +44,6 @@ import com.github.andreaTP.sqlite.wasm.util.OSInfo;
 public class SQLiteJDBCLoader {
     private static final Logger logger = LoggerFactory.getLogger(SQLiteJDBCLoader.class);
 
-    private static boolean loaded = false;
-
     @SuppressWarnings("unused")
     private static void getNativeLibraryFolderForTheCurrentOS() {
         String osName = OSInfo.getOSName();
@@ -72,9 +70,6 @@ public class SQLiteJDBCLoader {
      * @return The version of the SQLite JDBC driver.
      */
     public static String getVersion() {
-
-        // TODO: FIXME: inject at compile time with a template?
         return WasmDB.version();
-        //        return "unknown";
     }
 }
