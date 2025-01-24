@@ -37,8 +37,6 @@ public class WasmDB extends DB {
     private final WasiPreview1 wasiPreview1;
     private final WasmDBExports exports;
 
-    private final UDFStore UDFstore;
-
     // TODO: double-check proper cleanup of resources
     private final FileSystem fs;
 
@@ -68,8 +66,6 @@ public class WasmDB extends DB {
         } catch (IOException e) {
             throw new RuntimeException("Failed to create directory on the in-memory fs", e);
         }
-
-        this.UDFstore = new UDFStore();
 
         WasiOptions wasiOpts =
                 WasiOptions.builder()
@@ -167,7 +163,7 @@ public class WasmDB extends DB {
     private long[] xDestroy(long[] args) {
         int funIdx = (int) args[0];
 
-        UDFstore.free(funIdx);
+        UDFStore.free(funIdx);
         return null;
     }
 
@@ -175,7 +171,7 @@ public class WasmDB extends DB {
         int ctx = (int) args[0];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFstore.get(funIdx);
+        Function f = UDFStore.get(funIdx);
 
         f.setContext(ctx);
 
@@ -192,7 +188,7 @@ public class WasmDB extends DB {
         int ctx = (int) args[0];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFstore.get(funIdx);
+        Function f = UDFStore.get(funIdx);
 
         f.setContext(ctx);
 
@@ -211,7 +207,7 @@ public class WasmDB extends DB {
         int value = (int) args[2];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFstore.get(funIdx);
+        Function f = UDFStore.get(funIdx);
 
         // TODO: verify if all of this is needed ...
         f.setContext(ctx);
@@ -233,7 +229,7 @@ public class WasmDB extends DB {
         int value = (int) args[2];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFstore.get(funIdx);
+        Function f = UDFStore.get(funIdx);
 
         // TODO: verify if all of this is needed ...
         f.setContext(ctx);
@@ -255,7 +251,7 @@ public class WasmDB extends DB {
         int value = (int) args[2];
 
         int funIdx = exports.userData(ctx);
-        Function f = UDFstore.get(funIdx);
+        Function f = UDFStore.get(funIdx);
 
         // TODO: verify if all of this is needed ...
         f.setContext(ctx);
@@ -417,9 +413,10 @@ public class WasmDB extends DB {
 
     @Override
     protected void _close() throws SQLException {
-        ProgressHandlerStore.free(progressHandlerIdx);
+        int dbPtr = dbPtr();
+        ProgressHandlerStore.free(dbPtr);
 
-        exports.close(dbPtr());
+        exports.close(dbPtr);
         exports.free(dbPtrPtr);
         // TODO: when can we cleanup those resources?
         // Moving the library to load once this is a downside
@@ -645,7 +642,7 @@ public class WasmDB extends DB {
     @Override
     public int create_function(String name, Function f, int nArgs, int flags) throws SQLException {
         WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
-        int userData = UDFstore.registerFunction(f);
+        int userData = UDFStore.registerFunction(f);
 
         if (f instanceof Function.Aggregate) {
             boolean isWindow = f instanceof Function.Window;
@@ -715,20 +712,17 @@ public class WasmDB extends DB {
         return exports.limit(dbPtr(), id, value);
     }
 
-    // only one per connection, verify!
-    private int progressHandlerIdx = 0;
-
     @Override
     public void register_progress_handler(int vmCalls, ProgressHandler progressHandler)
             throws SQLException {
-        progressHandlerIdx = ProgressHandlerStore.registerProgressHandler(progressHandler);
+        int progressHandlerIdx = dbPtr();
+        ProgressHandlerStore.registerProgressHandler(progressHandlerIdx, progressHandler);
         exports.progressHandler(dbPtr(), vmCalls, progressHandlerIdx);
     }
 
     @Override
     public void clear_progress_handler() throws SQLException {
-        ProgressHandlerStore.free(progressHandlerIdx);
-        progressHandlerIdx = 0;
+        ProgressHandlerStore.free(dbPtr());
         exports.progressHandler(dbPtr(), 0, 0);
     }
 
@@ -762,11 +756,11 @@ public class WasmDB extends DB {
      *
      * @return a native pointer to validate memory is properly cleaned up in unit tests
      */
-    long getProgressHandler() {
-        if (ProgressHandlerStore.get(progressHandlerIdx) != null) {
-            return 1L;
-        } else {
+    long getProgressHandler() throws SQLException {
+        if (ProgressHandlerStore.isEmpty(dbPtr())) {
             return 0L;
+        } else {
+            return 1L;
         }
     }
 }

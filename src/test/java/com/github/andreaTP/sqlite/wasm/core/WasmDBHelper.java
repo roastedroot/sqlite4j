@@ -1,5 +1,7 @@
 package com.github.andreaTP.sqlite.wasm.core;
 
+import java.sql.SQLException;
+
 /** This is a helper class for exposing package local functions of NativeDB to unit tests */
 public class WasmDBHelper {
     /**
@@ -8,7 +10,7 @@ public class WasmDBHelper {
      * @param nativeDB the native db object
      * @return the pointer of the progress handler
      */
-    public static long getProgressHandler(DB nativeDB) {
+    public static long getProgressHandler(DB nativeDB) throws SQLException {
         return ((WasmDB) nativeDB).getProgressHandler();
     }
 

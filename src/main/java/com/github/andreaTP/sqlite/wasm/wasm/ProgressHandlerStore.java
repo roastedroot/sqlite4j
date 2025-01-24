@@ -1,54 +1,31 @@
 package com.github.andreaTP.sqlite.wasm.wasm;
 
 import com.github.andreaTP.sqlite.wasm.ProgressHandler;
-import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
 
-// TODO: verify
-// Instead of it being static we can have a specific UDFStore per Database
 public class ProgressHandlerStore {
-    // We have only one progress handler available per connection
-    // TODO: instantiate it in WasmDB and this can be a single slot
-    private static int MIN_CAPACITY = 1;
-    private static int count;
-    private static ArrayDeque<Integer> emptySlots = new ArrayDeque<>();
-    private static ProgressHandler[] store = new ProgressHandler[MIN_CAPACITY];
+    private static Map<Integer, ProgressHandler> store = new HashMap<>();
 
-    private static void increaseCapacity() {
-        final int newCapacity = store.length << 1;
-
-        final ProgressHandler[] array = new ProgressHandler[newCapacity];
-        System.arraycopy(store, 0, array, 0, store.length);
-
-        store = array;
-    }
-
-    public static int registerProgressHandler(ProgressHandler f) {
-        if (emptySlots.isEmpty()) {
-            store[count] = f;
-            count++;
-
-            if (count == store.length) {
-                increaseCapacity();
-            }
-
-            // TODO: we should probably never return 0 even for the UDFStore
-            // to be able to distinguish NULL
-            // Hack to let the tests run almost unmodified
-            return (count - 1);
+    public static int registerProgressHandler(int db, ProgressHandler f) {
+        // registering null is the same as freeing
+        if (f == null) {
+            free(db);
         } else {
-            int emptySlot = emptySlots.pop();
-
-            store[emptySlot] = f;
-            return emptySlot;
+            store.put(db, f);
         }
+        return db;
     }
 
     public static void free(int idx) {
-        store[idx] = null;
-        emptySlots.push(idx);
+        store.remove(idx);
     }
 
     public static ProgressHandler get(int idx) {
-        return store[idx];
+        return store.get(idx);
+    }
+
+    public static boolean isEmpty(int idx) {
+        return !store.containsKey(idx);
     }
 }
