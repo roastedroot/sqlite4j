@@ -238,7 +238,7 @@ public class ConnectionTest {
         return tmp;
     }
 
-    // TODO: cahce shared is not working!
+    // TODO: shared cache not working?
     @Test
     public void URIFilenames() throws SQLException {
         Connection conn1 =
@@ -289,6 +289,7 @@ public class ConnectionTest {
                 DriverManager.getConnection(
                         String.format(
                                 // TODO: WAL
+                                //
                                 // "jdbc:sqlite:%s?journal_mode=WAL&synchronous=OFF&journal_size_limit=500",
                                 "jdbc:sqlite:%s?journal_mode=truncate&synchronous=OFF&journal_size_limit=500",
                                 testDB));

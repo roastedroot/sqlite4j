@@ -21,8 +21,10 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.Executor;
 
 /** */
@@ -31,6 +33,10 @@ public abstract class SQLiteConnection implements Connection {
     private final DB db;
     private CoreDatabaseMetaData meta = null;
     private final SQLiteConnectionConfig connectionConfig;
+
+    // https://www.sqlite.org/sharedcache.html
+    // TODO: we keep a database unique for set of properties
+    private static Map<Integer, DB> sharedMemoryCache = new WeakHashMap<>();
 
     private TransactionMode currentTransactionMode;
     private boolean firstStatementExecuted = false;
@@ -288,10 +294,22 @@ public abstract class SQLiteConnection implements Connection {
         // load the native DB
         DB db = null;
         try {
-            // TODO: find a nice way to make this configurable
-            // NativeDB.load();
-            // db = new NativeDB(url, fileName, config);
-            db = new WasmDB(fs, url, fileName, config);
+            // TODO: those conditions are a bit weak ...
+            // TODO: hook up a proper query params/URI parser?
+            if (!fileName.isEmpty()
+                    && (fileName.startsWith("file:")
+                            && (fileName.contains("mode=memory") || fileName.contains(":memory:"))
+                            && fileName.contains("cache=shared"))) {
+                var key = newProps.hashCode();
+                if (sharedMemoryCache.containsKey(key)) {
+                    db = sharedMemoryCache.get(key);
+                } else {
+                    db = new WasmDB(fs, url, fileName, config);
+                    sharedMemoryCache.put(key, db);
+                }
+            } else {
+                db = new WasmDB(fs, url, fileName, config);
+            }
         } catch (Exception e) {
             SQLException err = new SQLException("Error opening connection");
             err.initCause(e);
