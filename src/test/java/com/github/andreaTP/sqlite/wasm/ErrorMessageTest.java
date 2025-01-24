@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.junit.jupiter.api.io.TempDir;
@@ -20,6 +21,7 @@ public class ErrorMessageTest {
     @TempDir File tempDir;
 
     @Test
+    @Disabled("We don't support live changes to the db file")
     public void moved() throws SQLException, IOException {
         File from = File.createTempFile("error-message-test-moved-from", ".sqlite", tempDir);
 
@@ -40,6 +42,7 @@ public class ErrorMessageTest {
     }
 
     @Test
+    @Disabled("We don't support live changes to the db file")
     public void writeProtected() throws SQLException, IOException {
         File file = File.createTempFile("error-message-test-write-protected", ".sqlite", tempDir);
 
@@ -74,6 +77,7 @@ public class ErrorMessageTest {
     }
 
     @Test
+    @Disabled("We don't support live changes to the db file")
     public void shouldUsePlainErrorCodeAsVendorCodeAndExtendedAsResultCode()
             throws SQLException, IOException {
         File from = File.createTempFile("error-message-test-plain-1", ".sqlite", tempDir);

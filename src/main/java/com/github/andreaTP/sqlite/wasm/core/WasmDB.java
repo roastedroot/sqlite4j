@@ -114,7 +114,7 @@ public class WasmDB extends DB {
         this.fs = fs;
 
         // TODO: move this logic to another place
-        // TODO: separte the concerns around the FileSystem when things are more stabilized
+        // TODO: separate the concerns around the FileSystem when things are more stabilized
         Path target = fs.getPath("/");
         try {
             if (!java.nio.file.Files.exists(target)) {
@@ -287,13 +287,18 @@ public class WasmDB extends DB {
 
     @Override
     protected synchronized void _open(String filename, int openFlags) throws SQLException {
+        Path origin = Path.of(filename);
         Path dest = fs.getPath(filename);
         if (!filename.isEmpty() && Files.notExists(dest)) {
             // TODO: verify if works on windows
-            if (Files.exists(Path.of(filename))) {
+            if (Files.exists(origin)) {
                 try (InputStream is = new FileInputStream(filename)) {
                     Files.createDirectories(dest);
                     java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+                    var owner = Files.getOwner(origin);
+                    Files.setOwner(dest, owner);
+                    var permissions = Files.getPosixFilePermissions(origin);
+                    Files.setPosixFilePermissions(dest, permissions);
                 } catch (IOException e) {
                     SQLException msg =
                             DB.newSQLException(
@@ -352,7 +357,6 @@ public class WasmDB extends DB {
     @Override
     public int step(long stmtPtrPtr) throws SQLException {
         int result = exports.step(exports.ptr((int) stmtPtrPtr));
-        // TODO: verify if this is the only place where this should happen
         if (result != SQLITE_OK) {
             return exports.extendedErrorcode(dbPtr());
         }
@@ -472,8 +476,9 @@ public class WasmDB extends DB {
     }
 
     @Override
-    public String column_decltype(long stmt, int col) throws SQLException {
-        throw new RuntimeException("column_decltype not implemented in WasmDB");
+    public String column_decltype(long stmtPtrPtr, int col) throws SQLException {
+        int ptr = exports.columnDeclType(exports.ptr((int) stmtPtrPtr), col);
+        return instance.memory().readCString(ptr);
     }
 
     @Override

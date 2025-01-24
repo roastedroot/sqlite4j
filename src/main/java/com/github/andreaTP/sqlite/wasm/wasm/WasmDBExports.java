@@ -36,6 +36,7 @@ public class WasmDBExports {
     private final ExportFunction bindParameterCount;
     private final ExportFunction columnCount;
     private final ExportFunction columnType;
+    private final ExportFunction columnDeclType;
     private final ExportFunction columnName;
     private final ExportFunction columnText;
     private final ExportFunction columnInt;
@@ -108,6 +109,7 @@ public class WasmDBExports {
         this.bindParameterCount = instance.exports().function("sqlite3_bind_parameter_count");
         this.columnCount = instance.exports().function("sqlite3_column_count");
         this.columnType = instance.exports().function("sqlite3_column_type");
+        this.columnDeclType = instance.exports().function("sqlite3_column_decltype");
         this.columnName = instance.exports().function("sqlite3_column_name");
         this.columnText = instance.exports().function("sqlite3_column_text");
         this.columnInt = instance.exports().function("sqlite3_column_int");
@@ -268,6 +270,10 @@ public class WasmDBExports {
 
     public int columnType(int stmtPtr, int col) {
         return (int) columnType.apply(stmtPtr, col)[0];
+    }
+
+    public int columnDeclType(int stmtPtr, int col) {
+        return (int) columnDeclType.apply(stmtPtr, col)[0];
     }
 
     public int columnName(int stmtPtr, int col) {
