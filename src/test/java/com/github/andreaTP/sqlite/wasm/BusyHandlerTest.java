@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.github.andreaTP.sqlite.wasm.core.DB;
+import com.github.andreaTP.sqlite.wasm.core.WasmDBHelper;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,8 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-
-import com.github.andreaTP.sqlite.wasm.core.WasmDBHelper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,7 +128,13 @@ public class BusyHandlerTest {
                         @Override
                         public int callback(int nbPrevInvok) {
                             // assertThat(calls[0]).isEqualTo(nbPrevInvok);
-                            System.out.println("Thread: " + threadNum + " ,calls: " + calls[0] + " ,prev: " + nbPrevInvok);
+                            System.out.println(
+                                    "Thread: "
+                                            + threadNum
+                                            + " ,calls: "
+                                            + calls[0]
+                                            + " ,prev: "
+                                            + nbPrevInvok);
                             calls[0]++;
 
                             if (nbPrevInvok <= 1) {
@@ -222,21 +227,21 @@ public class BusyHandlerTest {
         SQLiteConnection sqliteConnection = (SQLiteConnection) conn;
         setDummyHandler();
         final DB database = sqliteConnection.getDatabase();
-         Assertions.assertThat(WasmDBHelper.getBusyHandler(database)).isNotEqualTo(0);
-         BusyHandler.clearHandler(conn);
-         assertThat(WasmDBHelper.getBusyHandler(database)).isEqualTo(0);
-         BusyHandler.clearHandler(conn);
+        Assertions.assertThat(WasmDBHelper.getBusyHandler(database)).isNotEqualTo(0);
+        BusyHandler.clearHandler(conn);
+        assertThat(WasmDBHelper.getBusyHandler(database)).isEqualTo(0);
+        BusyHandler.clearHandler(conn);
 
-         setDummyHandler();
-         assertThat(WasmDBHelper.getBusyHandler(database)).isNotEqualTo(0);
-         BusyHandler.setHandler(conn, null);
-         assertThat(WasmDBHelper.getBusyHandler(database)).isEqualTo(0);
-         BusyHandler.setHandler(conn, null);
+        setDummyHandler();
+        assertThat(WasmDBHelper.getBusyHandler(database)).isNotEqualTo(0);
+        BusyHandler.setHandler(conn, null);
+        assertThat(WasmDBHelper.getBusyHandler(database)).isEqualTo(0);
+        BusyHandler.setHandler(conn, null);
 
-         setDummyHandler();
-         assertThat(WasmDBHelper.getBusyHandler(database)).isNotEqualTo(0);
-         conn.close();
-         assertThat(WasmDBHelper.getBusyHandler(database)).isEqualTo(0);
+        setDummyHandler();
+        assertThat(WasmDBHelper.getBusyHandler(database)).isNotEqualTo(0);
+        conn.close();
+        assertThat(WasmDBHelper.getBusyHandler(database)).isEqualTo(0);
     }
 
     private void setDummyHandler() throws SQLException {

@@ -21,7 +21,7 @@ public class WasmDBHelper {
      * @return the pointer of the busy handler
      */
     public static long getBusyHandler(DB nativeDB) throws SQLException {
-         return ((WasmDB) nativeDB).getBusyHandler();
+        return ((WasmDB) nativeDB).getBusyHandler();
     }
 
     /**

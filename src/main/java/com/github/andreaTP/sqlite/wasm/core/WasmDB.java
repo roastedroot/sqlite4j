@@ -683,6 +683,7 @@ public class WasmDB extends DB {
     public int destroy_function(String name) throws SQLException {
         WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
         int result = exports.createNullFunction(dbPtr(), namePtrSize.ptr());
+        // TODO: implement free from UDFStore based on name
         exports.free(namePtrSize.ptr());
         return result;
     }
