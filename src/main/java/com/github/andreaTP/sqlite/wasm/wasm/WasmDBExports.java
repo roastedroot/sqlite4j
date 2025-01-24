@@ -69,6 +69,7 @@ public class WasmDBExports {
     private final ExportFunction valueBytes;
     private final ExportFunction valueLong;
     private final ExportFunction progressHandler;
+    private final ExportFunction busyHandler;
 
     private final int xFuncPtr;
     private final int xStepPtr;
@@ -77,6 +78,7 @@ public class WasmDBExports {
     private final int xInversePtr;
     private final int xDestroyPtr;
     private final int xProgressPtr;
+    private final int xBusyPtr;
 
     public WasmDBExports(Instance instance) {
         this.instance = instance;
@@ -88,6 +90,7 @@ public class WasmDBExports {
         this.xInversePtr = (int) instance.exports().function("xInversePtr").apply()[0];
         this.xDestroyPtr = (int) instance.exports().function("xDestroyPtr").apply()[0];
         this.xProgressPtr = (int) instance.exports().function("xProgressPtr").apply()[0];
+        this.xBusyPtr = (int) instance.exports().function("xBusyPtr").apply()[0];
 
         this.realloc = instance.exports().function("realloc");
         this.malloc = instance.exports().function("malloc");
@@ -140,6 +143,7 @@ public class WasmDBExports {
         this.valueBytes = instance.exports().function("sqlite3_value_bytes");
 
         this.progressHandler = instance.exports().function("sqlite3_progress_handler");
+        this.busyHandler = instance.exports().function("sqlite3_busy_handler");
     }
 
     public int malloc(int size) {
@@ -428,5 +432,9 @@ public class WasmDBExports {
 
     public void progressHandler(int dbPtr, int vmCalls, int userData) {
         progressHandler.apply(dbPtr, vmCalls, xProgressPtr, userData);
+    }
+
+    public void busyHandler(int dbPtr, int userData) {
+        busyHandler.apply(dbPtr, xBusyPtr, userData);
     }
 }

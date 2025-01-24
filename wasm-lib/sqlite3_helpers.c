@@ -74,3 +74,13 @@ __attribute__((
 extern void* xProgressPtr() {
     return &xProgress;
 }
+
+extern int xBusy(void *userData, int nbPrevInvok)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xBusy"),
+));
+
+extern void* xBusyPtr() {
+    return &xBusy;
+}

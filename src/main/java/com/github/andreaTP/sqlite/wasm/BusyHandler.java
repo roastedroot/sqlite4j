@@ -60,5 +60,5 @@ public abstract class BusyHandler {
      *     database and SQLITE_BUSY is returned to the application. If the callback returns
      *     non-zero, then another attempt is made to access the database and the cycle repeats.
      */
-    protected abstract int callback(int nbPrevInvok) throws SQLException;
+    public abstract int callback(int nbPrevInvok) throws SQLException;
 }

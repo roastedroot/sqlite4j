@@ -14,6 +14,7 @@ import com.github.andreaTP.sqlite.wasm.Function;
 import com.github.andreaTP.sqlite.wasm.ProgressHandler;
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
 import com.github.andreaTP.sqlite.wasm.SQLiteModule;
+import com.github.andreaTP.sqlite.wasm.wasm.BusyHandlerStore;
 import com.github.andreaTP.sqlite.wasm.wasm.ProgressHandlerStore;
 import com.github.andreaTP.sqlite.wasm.wasm.UDFStore;
 import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
@@ -137,6 +138,13 @@ public class WasmDB extends DB {
                                                         List.of(ValueType.I32),
                                                         List.of(ValueType.I32),
                                                         (inst, args) -> xProgress(args)))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xBusy",
+                                                        List.of(ValueType.I32, ValueType.I32),
+                                                        List.of(ValueType.I32),
+                                                        (inst, args) -> xBusy(args)))
                                         .build())
                         .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
                         .build();
@@ -157,6 +165,21 @@ public class WasmDB extends DB {
 
         try {
             int result = f.progress();
+            return new long[] {result};
+        } catch (SQLException e) {
+            sneakyThrow(e);
+        }
+        return null;
+    }
+
+    private long[] xBusy(long[] args) {
+        int userData = (int) args[0];
+        int nbPrevInvok = (int) args[1];
+
+        BusyHandler f = BusyHandlerStore.get(userData);
+
+        try {
+            int result = f.callback(nbPrevInvok);
             return new long[] {result};
         } catch (SQLException e) {
             sneakyThrow(e);
@@ -378,7 +401,9 @@ public class WasmDB extends DB {
 
     @Override
     public void busy_handler(BusyHandler busyHandler) throws SQLException {
-        throw new RuntimeException("busy_handler not implemented in WasmDB");
+        int dbPtr = dbPtr();
+        int busyHandlerPtr = BusyHandlerStore.registerBusyHandler(dbPtr, busyHandler);
+        exports.busyHandler(dbPtr, busyHandlerPtr);
     }
 
     @Override
@@ -414,6 +439,7 @@ public class WasmDB extends DB {
     protected void _close() throws SQLException {
         int dbPtr = dbPtr();
         ProgressHandlerStore.free(dbPtr);
+        BusyHandlerStore.free(dbPtr);
 
         exports.close(dbPtr);
         exports.free(dbPtrPtr);
@@ -638,6 +664,7 @@ public class WasmDB extends DB {
         throw new RuntimeException("value_type not implemented in WasmDB");
     }
 
+    // TODO: seems like we need a synchronized from BusyHandlerTest.testMultiThreaded
     @Override
     public int create_function(String name, Function f, int nArgs, int flags) throws SQLException {
         WasmDBExports.StringPtrSize namePtrSize = exports.allocCString(name);
@@ -757,6 +784,19 @@ public class WasmDB extends DB {
      */
     long getProgressHandler() throws SQLException {
         if (ProgressHandlerStore.isEmpty(dbPtr())) {
+            return 0L;
+        } else {
+            return 1L;
+        }
+    }
+
+    /**
+     * Getter for native pointer to validate memory is properly cleaned up in unit tests
+     *
+     * @return a native pointer to validate memory is properly cleaned up in unit tests
+     */
+    long getBusyHandler() throws SQLException {
+        if (BusyHandlerStore.isEmpty(dbPtr())) {
             return 0L;
         } else {
             return 1L;
