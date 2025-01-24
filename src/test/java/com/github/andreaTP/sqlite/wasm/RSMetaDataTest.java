@@ -57,6 +57,7 @@ public class RSMetaDataTest {
         assertThat(meta.getColumnType(3)).isEqualTo(Types.VARCHAR);
         assertThat(meta.isAutoIncrement(1)).isTrue();
         assertThat(meta.isAutoIncrement(2)).isFalse();
+        assertThat(meta.isAutoIncrement(2)).isFalse();
         assertThat(meta.isAutoIncrement(3)).isFalse();
         assertThat(meta.isNullable(1)).isEqualTo(ResultSetMetaData.columnNullable);
         assertThat(meta.isNullable(2)).isEqualTo(ResultSetMetaData.columnNullable);

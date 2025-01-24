@@ -44,6 +44,7 @@ public class WasmDBExports {
     private final ExportFunction columnLong;
     private final ExportFunction columnBlob;
     private final ExportFunction columnBytes;
+    private final ExportFunction columnTableName;
     private final ExportFunction bindInt;
     private final ExportFunction bindLong;
     private final ExportFunction bindDouble;
@@ -117,6 +118,7 @@ public class WasmDBExports {
         this.columnLong = instance.exports().function("sqlite3_column_int64");
         this.columnBlob = instance.exports().function("sqlite3_column_blob");
         this.columnBytes = instance.exports().function("sqlite3_column_bytes");
+        this.columnTableName = instance.exports().function("sqlite3_column_table_name");
         this.bindInt = instance.exports().function("sqlite3_bind_int");
         this.bindLong = instance.exports().function("sqlite3_bind_int64");
         this.bindDouble = instance.exports().function("sqlite3_bind_double");
@@ -298,6 +300,10 @@ public class WasmDBExports {
 
     public long columnLong(int stmtPtr, int col) {
         return columnLong.apply(stmtPtr, col)[0];
+    }
+
+    public int columnTableName(int stmtPtr, int col) {
+        return (int) columnTableName.apply(stmtPtr, col)[0];
     }
 
     public byte[] columnBlob(int stmtPtr, int col) {

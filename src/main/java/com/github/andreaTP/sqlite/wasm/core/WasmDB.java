@@ -482,8 +482,12 @@ public class WasmDB extends DB {
     }
 
     @Override
-    public String column_table_name(long stmt, int col) throws SQLException {
-        throw new RuntimeException("column_table_name not implemented in WasmDB");
+    public String column_table_name(long stmtPtrPtr, int col) throws SQLException {
+        int ptr = exports.columnTableName(exports.ptr((int) stmtPtrPtr), col);
+        if (ptr == 0) {
+            return null;
+        }
+        return instance.memory().readCString(ptr);
     }
 
     @Override
