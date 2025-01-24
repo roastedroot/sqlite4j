@@ -143,6 +143,10 @@ public class WasmDB extends DB {
         exports = new WasmDBExports(instance);
     }
 
+    public static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
+        throw (E) e;
+    }
+
     // https://www.sqlite.org/c3ref/progress_handler.html
     // only 1 progress handler at the time
     // TODO: do we need the Store at all?
@@ -154,10 +158,10 @@ public class WasmDB extends DB {
         try {
             int result = f.progress();
             return new long[] {result};
-            // TODO: decide how to handle the checked exception thrown here
         } catch (SQLException e) {
-            throw new RuntimeException("wrapped SQLException", e);
+            sneakyThrow(e);
         }
+        return null;
     }
 
     private long[] xDestroy(long[] args) {
@@ -177,9 +181,8 @@ public class WasmDB extends DB {
 
         try {
             ((Function.Aggregate) f).xFinal();
-            // TODO: decide how to handle the checked exception thrown here
         } catch (SQLException e) {
-            throw new RuntimeException("wrapped SQLException", e);
+            sneakyThrow(e);
         }
         return null;
     }
@@ -194,9 +197,8 @@ public class WasmDB extends DB {
 
         try {
             ((Function.Window) f).xValue();
-            // TODO: decide how to handle the checked exception thrown here
         } catch (SQLException e) {
-            throw new RuntimeException("wrapped SQLException", e);
+            sneakyThrow(e);
         }
         return null;
     }
@@ -216,9 +218,8 @@ public class WasmDB extends DB {
 
         try {
             f.xFunc();
-            // TODO: decide how to handle the checked exception thrown here
         } catch (SQLException e) {
-            throw new RuntimeException("wrapped SQLException", e);
+            sneakyThrow(e);
         }
         return null;
     }
@@ -238,9 +239,8 @@ public class WasmDB extends DB {
 
         try {
             ((Function.Aggregate) f).xStep();
-            // TODO: decide how to handle the checked exception thrown here
         } catch (SQLException e) {
-            throw new RuntimeException("wrapped SQLException", e);
+            sneakyThrow(e);
         }
         return null;
     }
@@ -260,9 +260,8 @@ public class WasmDB extends DB {
 
         try {
             ((Function.Window) f).xInverse();
-            // TODO: decide how to handle the checked exception thrown here
         } catch (SQLException e) {
-            throw new RuntimeException("wrapped SQLException", e);
+            sneakyThrow(e);
         }
         return null;
     }
