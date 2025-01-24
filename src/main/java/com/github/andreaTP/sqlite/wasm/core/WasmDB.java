@@ -41,16 +41,72 @@ public class WasmDB extends DB {
     // TODO: double-check proper cleanup of resources
     private final FileSystem fs;
 
-    public String version() {
-        int ptr = exports.version();
-        String version = instance.memory().readCString(ptr);
-        return version;
-    }
-
     /** SQLite connection handle. */
     private int dbPtrPtr = 0;
 
     private int dbPtr = 0;
+
+    private ImportValues imports() {
+        return ImportValues.builder()
+                .addFunction(wasiPreview1.toHostFunctions())
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xFunc",
+                                List.of(ValueType.I32, ValueType.I32, ValueType.I32),
+                                List.of(),
+                                (inst, args) -> xFunc(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xStep",
+                                List.of(ValueType.I32, ValueType.I32, ValueType.I32),
+                                List.of(),
+                                (inst, args) -> xStep(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xFinal",
+                                List.of(ValueType.I32),
+                                List.of(),
+                                (inst, args) -> xFinal(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xValue",
+                                List.of(ValueType.I32),
+                                List.of(),
+                                (inst, args) -> xValue(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xInverse",
+                                List.of(ValueType.I32, ValueType.I32, ValueType.I32),
+                                List.of(),
+                                (inst, args) -> xInverse(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xDestroy",
+                                List.of(ValueType.I32),
+                                List.of(),
+                                (inst, args) -> xDestroy(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xProgress",
+                                List.of(ValueType.I32),
+                                List.of(ValueType.I32),
+                                (inst, args) -> xProgress(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xBusy",
+                                List.of(ValueType.I32, ValueType.I32),
+                                List.of(ValueType.I32),
+                                (inst, args) -> xBusy(args)))
+                .build();
+    }
 
     public WasmDB(FileSystem fs, String url, String fileName, SQLiteConfig config)
             throws SQLException {
@@ -77,81 +133,13 @@ public class WasmDB extends DB {
         instance =
                 Instance.builder(MODULE)
                         .withMachineFactory(SQLiteModule::create)
-                        .withImportValues(
-                                ImportValues.builder()
-                                        .addFunction(wasiPreview1.toHostFunctions())
-                                        .addFunction(
-                                                new HostFunction(
-                                                        "env",
-                                                        "xFunc",
-                                                        List.of(
-                                                                ValueType.I32,
-                                                                ValueType.I32,
-                                                                ValueType.I32),
-                                                        List.of(),
-                                                        (inst, args) -> xFunc(args)))
-                                        .addFunction(
-                                                new HostFunction(
-                                                        "env",
-                                                        "xStep",
-                                                        List.of(
-                                                                ValueType.I32,
-                                                                ValueType.I32,
-                                                                ValueType.I32),
-                                                        List.of(),
-                                                        (inst, args) -> xStep(args)))
-                                        .addFunction(
-                                                new HostFunction(
-                                                        "env",
-                                                        "xFinal",
-                                                        List.of(ValueType.I32),
-                                                        List.of(),
-                                                        (inst, args) -> xFinal(args)))
-                                        .addFunction(
-                                                new HostFunction(
-                                                        "env",
-                                                        "xValue",
-                                                        List.of(ValueType.I32),
-                                                        List.of(),
-                                                        (inst, args) -> xValue(args)))
-                                        .addFunction(
-                                                new HostFunction(
-                                                        "env",
-                                                        "xInverse",
-                                                        List.of(
-                                                                ValueType.I32,
-                                                                ValueType.I32,
-                                                                ValueType.I32),
-                                                        List.of(),
-                                                        (inst, args) -> xInverse(args)))
-                                        .addFunction(
-                                                new HostFunction(
-                                                        "env",
-                                                        "xDestroy",
-                                                        List.of(ValueType.I32),
-                                                        List.of(),
-                                                        (inst, args) -> xDestroy(args)))
-                                        .addFunction(
-                                                new HostFunction(
-                                                        "env",
-                                                        "xProgress",
-                                                        List.of(ValueType.I32),
-                                                        List.of(ValueType.I32),
-                                                        (inst, args) -> xProgress(args)))
-                                        .addFunction(
-                                                new HostFunction(
-                                                        "env",
-                                                        "xBusy",
-                                                        List.of(ValueType.I32, ValueType.I32),
-                                                        List.of(ValueType.I32),
-                                                        (inst, args) -> xBusy(args)))
-                                        .build())
+                        .withImportValues(imports())
                         .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
                         .build();
         exports = new WasmDBExports(instance);
     }
 
-    public static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
+    private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
     }
 
@@ -802,5 +790,92 @@ public class WasmDB extends DB {
         } else {
             return 1L;
         }
+    }
+
+    // This call is expensive as it will start an extra module
+    // TODO: check if we can use caches
+    // TODO: refactor instance creation!
+    public static String version() {
+        WasiOptions wasiOpts = WasiOptions.builder().build();
+        WasiPreview1 wasiPreview1 = WasiPreview1.builder().withOptions(wasiOpts).build();
+
+        Instance tmp =
+                Instance.builder(MODULE)
+                        .withMachineFactory(SQLiteModule::create)
+                        .withImportValues(
+                                ImportValues.builder()
+                                        .addFunction(wasiPreview1.toHostFunctions())
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xFunc",
+                                                        List.of(
+                                                                ValueType.I32,
+                                                                ValueType.I32,
+                                                                ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> null))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xStep",
+                                                        List.of(
+                                                                ValueType.I32,
+                                                                ValueType.I32,
+                                                                ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> null))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xFinal",
+                                                        List.of(ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> null))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xValue",
+                                                        List.of(ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> null))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xInverse",
+                                                        List.of(
+                                                                ValueType.I32,
+                                                                ValueType.I32,
+                                                                ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> null))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xDestroy",
+                                                        List.of(ValueType.I32),
+                                                        List.of(),
+                                                        (inst, args) -> null))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xProgress",
+                                                        List.of(ValueType.I32),
+                                                        List.of(ValueType.I32),
+                                                        (inst, args) -> null))
+                                        .addFunction(
+                                                new HostFunction(
+                                                        "env",
+                                                        "xBusy",
+                                                        List.of(ValueType.I32, ValueType.I32),
+                                                        List.of(ValueType.I32),
+                                                        (inst, args) -> null))
+                                        .build())
+                        .withStart(false)
+                        .build();
+        int ptr = new WasmDBExports(tmp).version();
+
+        String version = tmp.memory().readCString(ptr);
+        return version;
     }
 }

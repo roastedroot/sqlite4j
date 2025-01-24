@@ -24,6 +24,7 @@
 // --------------------------------------
 package com.github.andreaTP.sqlite.wasm;
 
+import com.github.andreaTP.sqlite.wasm.core.WasmDB;
 import com.github.andreaTP.sqlite.wasm.util.Logger;
 import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
 import com.github.andreaTP.sqlite.wasm.util.OSInfo;
@@ -71,8 +72,9 @@ public class SQLiteJDBCLoader {
      * @return The version of the SQLite JDBC driver.
      */
     public static String getVersion() {
+
         // TODO: FIXME: inject at compile time with a template?
-        // return WasmDB.version();
-        return "unknown";
+        return WasmDB.version();
+        //        return "unknown";
     }
 }
