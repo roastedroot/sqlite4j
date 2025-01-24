@@ -5,6 +5,8 @@ import com.github.andreaTP.sqlite.wasm.core.CoreDatabaseMetaData;
 import com.github.andreaTP.sqlite.wasm.core.DB;
 import com.github.andreaTP.sqlite.wasm.core.WasmDB;
 import com.github.andreaTP.sqlite.wasm.jdbc4.JDBC4DatabaseMetaData;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +14,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
@@ -31,6 +34,10 @@ public abstract class SQLiteConnection implements Connection {
 
     private TransactionMode currentTransactionMode;
     private boolean firstStatementExecuted = false;
+
+    // One single filesystem for all connections
+    private static final FileSystem fs =
+            Jimfs.newFileSystem(Configuration.unix().toBuilder().setAttributeViews("unix").build());
 
     /**
      * Connection constructor for reusing an existing DB handle
@@ -284,7 +291,7 @@ public abstract class SQLiteConnection implements Connection {
             // TODO: find a nice way to make this configurable
             // NativeDB.load();
             // db = new NativeDB(url, fileName, config);
-            db = new WasmDB(url, fileName, config);
+            db = new WasmDB(fs, url, fileName, config);
         } catch (Exception e) {
             SQLException err = new SQLException("Error opening connection");
             err.initCause(e);
@@ -428,6 +435,16 @@ public abstract class SQLiteConnection implements Connection {
     public void close() throws SQLException {
         if (isClosed()) return;
         if (meta != null) meta.close();
+
+        // TODO: how to clean this up?
+        // We should never close the FileSystem as other connections might be using it ...
+        //        if (fs != null) {
+        //            try {
+        //                fs.close();
+        //            } catch (IOException e) {
+        //                throw new RuntimeException(e);
+        //            }
+        //        }
 
         db.close();
     }

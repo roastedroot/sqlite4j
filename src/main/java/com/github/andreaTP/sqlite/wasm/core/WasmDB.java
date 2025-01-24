@@ -17,8 +17,6 @@ import com.github.andreaTP.sqlite.wasm.SQLiteModule;
 import com.github.andreaTP.sqlite.wasm.wasm.ProgressHandlerStore;
 import com.github.andreaTP.sqlite.wasm.wasm.UDFStore;
 import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,14 +51,15 @@ public class WasmDB extends DB {
 
     private int dbPtr = 0;
 
-    public WasmDB(String url, String fileName, SQLiteConfig config) throws SQLException {
+    public WasmDB(FileSystem fs, String url, String fileName, SQLiteConfig config)
+            throws SQLException {
         super(url, fileName, config);
-        fs =
-                Jimfs.newFileSystem(
-                        Configuration.unix().toBuilder().setAttributeViews("unix").build());
-        Path target = fs.getPath("tmp");
+        this.fs = fs;
+        Path target = fs.getPath("/");
         try {
-            java.nio.file.Files.createDirectory(target);
+            if (!java.nio.file.Files.exists(target)) {
+                java.nio.file.Files.createDirectory(target);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Failed to create directory on the in-memory fs", e);
         }
@@ -275,22 +274,14 @@ public class WasmDB extends DB {
 
     @Override
     protected void _open(String filename, int openFlags) throws SQLException {
-        if (Files.exists(Path.of(filename)) && !filename.isEmpty()) {
+        Path dest = fs.getPath(filename);
+        if (!filename.isEmpty() && Files.exists(Path.of(filename)) && Files.notExists(dest)) {
             // TODO: verify if works on windows
-            // TODO: make this more consistent
-            String destFilename =
-                    (filename.startsWith("/"))
-                            ? filename.substring(1, filename.length())
-                            : filename;
-            Path dest = fs.getPath("tmp").resolve(destFilename);
-            if (Files.notExists(dest)) {
-                try (InputStream is = new FileInputStream(filename)) {
-                    Files.createDirectories(dest);
-                    java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
-                    filename = dest.toString();
-                } catch (IOException e) {
-                    throw new SQLException("Failed to map to memory the file: " + filename, e);
-                }
+            try (InputStream is = new FileInputStream(filename)) {
+                Files.createDirectories(dest);
+                java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new SQLException("Failed to map to memory the file: " + filename, e);
             }
         }
 
