@@ -273,15 +273,26 @@ public class WasmDB extends DB {
     }
 
     @Override
-    protected void _open(String filename, int openFlags) throws SQLException {
+    protected synchronized void _open(String filename, int openFlags) throws SQLException {
         Path dest = fs.getPath(filename);
-        if (!filename.isEmpty() && Files.exists(Path.of(filename)) && Files.notExists(dest)) {
+        if (!filename.isEmpty() && Files.notExists(dest)) {
             // TODO: verify if works on windows
-            try (InputStream is = new FileInputStream(filename)) {
-                Files.createDirectories(dest);
-                java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                throw new SQLException("Failed to map to memory the file: " + filename, e);
+            if (Files.exists(Path.of(filename))) {
+                try (InputStream is = new FileInputStream(filename)) {
+                    Files.createDirectories(dest);
+                    java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new SQLException("Failed to map to memory the file: " + filename, e);
+                }
+            } else {
+                try {
+                    Files.createDirectories(dest);
+                    // the "Files.notExists(dest)" should prevent this from happening
+                    // still is observable in the tests
+                    Files.deleteIfExists(dest);
+                } catch (IOException e) {
+                    throw new SQLException("Failed to create in memory the file: " + filename, e);
+                }
             }
         }
 
