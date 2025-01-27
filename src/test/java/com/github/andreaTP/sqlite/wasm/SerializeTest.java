@@ -149,6 +149,7 @@ public class SerializeTest {
     @Test
     public void testFileIsBufferCompatible() throws SQLException, IOException {
         File tmp = File.createTempFile("sqlite_test", ".db");
+        String x = tmp.getAbsolutePath();
         try (SQLiteConnection connection =
                 (SQLiteConnection)
                         DriverManager.getConnection("jdbc:sqlite:" + tmp.getAbsolutePath())) {

@@ -1,5 +1,7 @@
 package com.github.andreaTP.sqlite.wasm.core;
 
+import static com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports.SQLITE_SERIALIZE_NOCOPY;
+
 import com.dylibso.chicory.runtime.HostFunction;
 import com.dylibso.chicory.runtime.ImportValues;
 import com.dylibso.chicory.runtime.Instance;
@@ -345,7 +347,7 @@ public class WasmDB extends DB {
         exports.free(str.ptr());
         if (res != SQLITE_OK) {
             int errCode = exports.extendedErrorcode(dbPtr());
-            exports.close(dbPtr());
+            // exports.close(dbPtr());
             throw DB.newSQLException(errCode, errmsg());
         }
 
@@ -439,8 +441,17 @@ public class WasmDB extends DB {
         ProgressHandlerStore.free(dbPtr);
         BusyHandlerStore.free(dbPtr);
 
-        exports.close(dbPtr);
+        int res = exports.close(dbPtr);
+        if (res != SQLITE_OK) {
+            throw DB.newSQLException(res, errmsg());
+        }
+
         exports.free(dbPtrPtr);
+
+        // The handlers tests are failing when resetting those pointers
+        // TODO: investigate the reason!
+        this.dbPtr = 0;
+        this.dbPtrPtr = 0;
         // TODO: when can we cleanup those resources?
         // Moving the library to load once this is a downside
         //        if (FS != null) {
@@ -813,12 +824,37 @@ public class WasmDB extends DB {
 
     @Override
     public byte[] serialize(String schema) throws SQLException {
-        throw new RuntimeException("serialize not implemented in WasmDB");
+        int schemaPtr = exports.allocCString(schema);
+        int sizePtr = exports.malloc(8);
+
+        int buffPtr = exports.serialize(dbPtr(), schemaPtr, sizePtr, SQLITE_SERIALIZE_NOCOPY);
+        if (buffPtr == 0) {
+            // This happens if we start without a deserialized database
+            buffPtr = exports.serialize(dbPtr(), schemaPtr, sizePtr, 0);
+        }
+
+        long buffSize = instance.memory().readLong(sizePtr);
+        exports.free(sizePtr);
+        exports.free(schemaPtr);
+
+        byte[] result = instance.memory().readBytes(buffPtr, (int) buffSize);
+        exports.free(buffPtr);
+
+        return result;
     }
 
     @Override
     public void deserialize(String schema, byte[] buff) throws SQLException {
-        throw new RuntimeException("deserialize not implemented in WasmDB");
+        int schemaPtr = exports.allocCString(schema);
+        int buffPtr = exports.malloc(buff.length);
+        instance.memory().write(buffPtr, buff);
+
+        int res = exports.deserialize(dbPtr(), schemaPtr, buffPtr, buff.length);
+        if (res != SQLITE_OK) {
+            throw DB.newSQLException(res, errmsg());
+        }
+
+        // exports.free(schemaPtr);
     }
 
     /**

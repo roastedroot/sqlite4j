@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 public class WasmDBExports {
 
     private static final int SQLITE_TRANSIENT = -1; // https://www.sqlite.org/c3ref/c_static.html
+    public static final int SQLITE_SERIALIZE_NOCOPY = 0x001;
 
     private static final int SQLITE_UTF8 = 1; /* IMP: R-37514-35566 */
     private static final int SQLITE_UTF16LE = 2; /* IMP: R-03371-37637 */
@@ -73,6 +74,8 @@ public class WasmDBExports {
     private final ExportFunction valueLong;
     private final ExportFunction progressHandler;
     private final ExportFunction busyHandler;
+    private final ExportFunction serialize;
+    private final ExportFunction deserialize;
 
     private final int xFuncPtr;
     private final int xStepPtr;
@@ -147,6 +150,8 @@ public class WasmDBExports {
         this.valueLong = instance.exports().function("sqlite3_value_int64");
         this.valueBlob = instance.exports().function("sqlite3_value_blob");
         this.valueBytes = instance.exports().function("sqlite3_value_bytes");
+        this.serialize = instance.exports().function("sqlite3_serialize");
+        this.deserialize = instance.exports().function("sqlite3_deserialize");
 
         this.progressHandler = instance.exports().function("sqlite3_progress_handler");
         this.busyHandler = instance.exports().function("sqlite3_busy_handler");
@@ -489,5 +494,28 @@ public class WasmDBExports {
 
     public void busyHandler(int dbPtr, int userData) {
         busyHandler.apply(dbPtr, xBusyPtr, userData);
+    }
+
+    // size is an output!
+    public int serialize(int dbPtr, int schemaPtr, long size, int flags) {
+        return (int) serialize.apply(dbPtr, schemaPtr, size, flags)[0];
+    }
+
+    //    #define SQLITE_DESERIALIZE_FREEONCLOSE 1 /* Call sqlite3_free() on close */
+    //    #define SQLITE_DESERIALIZE_RESIZEABLE  2 /* Resize using sqlite3_realloc64() */
+    //    #define SQLITE_DESERIALIZE_READONLY    4 /* Database is read-only */
+    // SQLITE_DESERIALIZE_FREEONCLOSE + SQLITE_DESERIALIZE_RESIZEABLE;
+    private static final int deserializeDefaultFlags = 1 + 2;
+
+    //    sqlite3 *db,            /* The database connection */
+    //    const char *zSchema,    /* Which DB to reopen with the deserialization */
+    //    unsigned char *pData,   /* The serialized database content */
+    //    sqlite3_int64 szDb,     /* Number bytes in the deserialization */
+    //    sqlite3_int64 szBuf,    /* Total size of buffer pData[] */
+    //    unsigned mFlags         /* Zero or more SQLITE_DESERIALIZE_* flags */
+    public int deserialize(int dbPtr, int schemaPtr, int buffPtr, long size) {
+        return (int)
+                deserialize
+                        .apply(dbPtr, schemaPtr, buffPtr, size, size, deserializeDefaultFlags)[0];
     }
 }
