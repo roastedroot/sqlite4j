@@ -1,3 +1,12 @@
+# SQLite JDBC Driver on WASM
+
+This is a port of the awesome [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/) to run in pure Java with SQLite compiled to WASM.
+
+This is currently a **Work In Progress**.
+
+below the original readme:
+---
+
 = SQLite JDBC Driver
 :project-version: 3.48.0.0
 

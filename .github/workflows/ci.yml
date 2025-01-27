@@ -1,257 +1,46 @@
 name: CI
 
+name: CI
+
 on:
-  workflow_dispatch:
-    inputs:
-      perform_release:
-        description: 'Perform release'
-        default: false
-        type: boolean
-      push_maven:
-        description: 'Push to maven Central'
-        default: true
-        type: boolean
-  pull_request:
-    paths:
-      - '**.java'
-      - '**.xml'
-      - '**.so'
-      - '**.dylib'
-      - '**.dll'
-      - '.github/workflows/*.yml'
   push:
-    branches-ignore:
-      - 'dependabot/**'
-    paths:
-      - '**.java'
-      - '**.xml'
-      - '**.so'
-      - '**.dylib'
-      - '**.dll'
-      - '.github/workflows/*.yml'
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# When a new revision is pushed to a PR, cancel all in-progress CI runs for that
+# PR. See https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
 
 jobs:
-  lint:
-    name: Check code formatting
+  build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: 11
-          java-package: jdk
-          cache: 'maven'
-      - name: spotless:check
-        run: mvn --batch-mode --no-transfer-progress spotless:check
-
-  test:
-    name: test ${{ matrix.os }} jdk${{ matrix.java }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
-        java: [ 11, 17, 20 ]
-        include:
-          - os: windows-latest
-            java: 20
-          - os: macos-latest
-            java: 20
-    runs-on: ${{ matrix.os }}
+        java-version: [11, 17, 21]
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: ${{ matrix.java }}
-          java-package: jdk
-          cache: 'maven'
-      - name: Test
-        run: mvn --batch-mode --no-transfer-progress test
+    - uses: actions/checkout@v4
 
-  test_graalvm:
-    name: test ${{ matrix.os }} jdk${{ matrix.java }} GraalVM native-image - ${{ matrix.profiles }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java: [ '17', '21', '22' ]
-        profiles: ['native', 'native,native-exported']
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: 'graalvm-community'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Test
-        run: mvn --batch-mode --no-transfer-progress -P ${{ matrix.profiles }} integration-test
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '${{ matrix.java-version }}'
+        cache: maven
 
-  test_multiarch:
-    name: test ${{ matrix.arch }} ${{ matrix.distro }} jdk${{ matrix.java }}
-    strategy:
-      matrix:
-        include:
-          # ARM v7
-          - arch: armv7
-            distro: ubuntu_latest
-            java: 21
-          # ARM 64
-          - arch: aarch64
-            distro: ubuntu_latest
-            java: 21
-          - arch: aarch64
-            distro: alpine_latest
-            java: 21
-          # PPC64
-          - arch: ppc64le
-            distro: ubuntu_latest
-            java: 21
-          # RISC-V 64
-          - arch: riscv64
-            distro: ubuntu_latest
-            java: 21
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: uraimo/run-on-arch-action@v2
-        name: Test
-        with:
-          arch: ${{ matrix.arch }}
-          distro: ${{ matrix.distro }}
+    - name: Test opa-java-wasm
+      run: mvn -B clean install
 
-          # Not required, but speeds up builds
-          githubToken: ${{ github.token }}
-
-          # Install some dependencies in the container. This speeds up builds if
-          # you are also using githubToken. Any dependencies installed here will
-          # be part of the container image that gets cached, so subsequent
-          # builds don't have to re-install them. The image layer is cached
-          # publicly in your project's package repository, so it is vital that
-          # no secrets are present in the container state or logs.
-          install: |
-            case "${{ matrix.distro }}" in
-              ubuntu*|jessie|stretch|buster|bullseye)
-                apt-get update -q -y
-                apt-get install -q -y maven openjdk-${{ matrix.java }}-jdk
-                ;;
-              alpine*)
-                apk update
-                apk add maven openjdk${{ matrix.java }}
-                ;;
-            esac
-
-          # We use the Github Action user, 1001:121, so that maven can access
-          # the /work directory and create target/classes
-          dockerRunArgs: |
-            --volume "${PWD}:/work"
-            --user 1001:121
-
-          env: |
-            SKIP_TEST_MULTIARCH: true
-
-          run: |
-            echo "Architecture: `uname -a`"
-            mvn --version
-            cd /work && mvn -Dmaven.repo.local=/work/.m2/repository --batch-mode --no-transfer-progress test
-
-  # This will test the build process using an external amalgamation, as well as the
-  # Java tests with that native library, as some functions will not be available (extensions).
-  # Here we use the sqlite3 package installed by homebrew on Mac, which comes
-  # with the header file and library.
-  test_external_amalgamation:
-    name: test external amalgamation
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: 20
-          java-package: jdk
-          cache: 'maven'
-      - run: brew install sqlite3
-      - name: Find SQLite directory
-        run: |
-          BREW_SQLITE_PREFIX=`brew --prefix sqlite3`
-          echo "SQLITE_DIR=$(dirname ${BREW_SQLITE_PREFIX})/$(readlink ${BREW_SQLITE_PREFIX})" | tee -a $GITHUB_ENV
-      - name: Make native lib
-        run: |
-          make native SQLITE_OBJ=${{ env.SQLITE_DIR }}/lib/libsqlite3.dylib SQLITE_HEADER=${{ env.SQLITE_DIR }}/include/sqlite3.h
-      - name: Test
-        run: mvn --batch-mode --no-transfer-progress test
-
-  release:
-    name: Deploy
-    needs: [ lint, test, test_multiarch, test_external_amalgamation, test_graalvm ]
-    if: github.repository_owner == 'xerial' && github.ref == 'refs/heads/master' # only perform on latest master
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print inputs
-        run: |
-          echo "Perform release: ${{ inputs.perform_release }}"
-      - uses: actions/checkout@v4
-        if: github.event_name == 'push' || inputs.perform_release != true
-      # when performing a release we need the full git history to generate the changelog
-      - uses: actions/checkout@v4
-        if: inputs.perform_release
-        with:
-          fetch-depth: 0
-      - name: Set up Apache Maven Central
-        uses: actions/setup-java@v4
-        with: # running setup-java again overwrites the settings.xml
-          distribution: 'temurin'
-          java-version: '11'
-          java-package: jdk
-          server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
-          server-username: MAVEN_CENTRAL_USERNAME # env variable for username in deploy (1)
-          server-password: MAVEN_CENTRAL_PASSWORD # env variable for token in deploy (2)
-      - name: Get Project Version
-        run: |
-          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" | tee -a $GITHUB_ENV
-      - name: Cancel action for non SNAPSHOT push
-        if: github.event_name == 'push' && !endsWith(env.PROJECT_VERSION, '-SNAPSHOT')
-        uses: andymckay/cancel-action@0.5
-      # from that point, if inputs.perform_release is true we perform a release, else we deploy snapshot
-      - name: Prepare release
-        if: inputs.perform_release
-        run: |
-          mvn --no-transfer-progress versions:set -DremoveSnapshot -DgenerateBackupPoms=false
-          RELEASE_VERSION=`mvn help:evaluate -Dexpression=project.version -q -DforceStdout`
-          echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
-          sed -i -e "s/^\:project-version\:\ .*/:project-version: ${RELEASE_VERSION}/g" README.adoc
-
-      - name: Build
-        run: mvn --batch-mode --no-transfer-progress package -P release -DskipTests
-
-      # The sonatype maven plugin will decide the right destination depending on whether the project is SNAPSHOT or not
-      - name: Publish to Apache Maven Central
-        if: github.event_name == 'push' || inputs.push_maven
-        run: mvn --batch-mode --no-transfer-progress deploy -P release -DskipTests -Dgpg.signer=bc
-        env:
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # must be the same env variable name as (1)
-          MAVEN_CENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # must be the same env variable name as (2)
-          MAVEN_GPG_KEY: ${{ secrets.GPG_KEY }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-      - name: Release commit and push
-        if: inputs.perform_release
-        uses: EndBug/add-and-commit@v9
-        with:
-          message: 'chore(release): ${{ env.RELEASE_VERSION }} [skip ci]'
-          tag: '${{ env.RELEASE_VERSION }} --force'
-          default_author: github_actions
-      - name: Create Github release with JReleaser
-        if: inputs.perform_release
-        env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mvn --batch-mode --no-transfer-progress -DskipTests jreleaser:full-release
-      - name: Prepare next snapshot
-        if: inputs.perform_release
-        run: |
-          mvn versions:set -DnextSnapshot -DgenerateBackupPoms=false
-      - name: Next snapshot commit and push
-        if: inputs.perform_release
-        uses: EndBug/add-and-commit@v9
-        with:
-          message: 'chore(release): prepare next snapshot [skip ci]'
-          default_author: github_actions
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v5
+      if: success() || failure() # always run even if the previous step fails
+      with:
+        report_paths: '**/target/surefire-reports/TEST-*.xml'
