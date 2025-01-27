@@ -762,8 +762,43 @@ public class WasmDB extends DB {
     }
 
     @Override
-    boolean[][] column_metadata(long stmt) throws SQLException {
-        throw new RuntimeException("column_metadata not implemented in WasmDB");
+    boolean[][] column_metadata(long stmtPtrPtr) throws SQLException {
+        int stmtPtr = exports.ptr((int) stmtPtrPtr);
+        int colCount = exports.columnCount(stmtPtr);
+
+        boolean[][] result = new boolean[colCount][3];
+
+        for (int i = 0; i < colCount; i++) {
+            // load passed column name and table name
+            int zColumnNamePtr = exports.columnName(stmtPtr, i);
+            int zTableNamePtr = exports.columnTableName(stmtPtr, i);
+
+            int pNotNullPtr = exports.malloc(1);
+            int pPrimaryKeyPtr = exports.malloc(1);
+            int pAutoincPtr = exports.malloc(1);
+
+            instance.memory().writeByte(pNotNullPtr, (byte) 0);
+            instance.memory().writeByte(pPrimaryKeyPtr, (byte) 0);
+            instance.memory().writeByte(pAutoincPtr, (byte) 0);
+
+            int res =
+                    exports.columnMetadata(
+                            dbPtr(),
+                            zTableNamePtr,
+                            zColumnNamePtr,
+                            pNotNullPtr,
+                            pPrimaryKeyPtr,
+                            pAutoincPtr);
+            assert (res == SQLITE_OK);
+
+            result[i][0] = instance.memory().read(pNotNullPtr) > 0;
+            result[i][1] = instance.memory().read(pPrimaryKeyPtr) > 0;
+            result[i][2] = instance.memory().read(pAutoincPtr) > 0;
+            exports.free(pNotNullPtr);
+            exports.free(pPrimaryKeyPtr);
+            exports.free(pAutoincPtr);
+        }
+        return result;
     }
 
     @Override

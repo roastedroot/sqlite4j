@@ -45,6 +45,7 @@ public class WasmDBExports {
     private final ExportFunction columnBlob;
     private final ExportFunction columnBytes;
     private final ExportFunction columnTableName;
+    private final ExportFunction columnMetadata;
     private final ExportFunction bindInt;
     private final ExportFunction bindLong;
     private final ExportFunction bindDouble;
@@ -119,6 +120,7 @@ public class WasmDBExports {
         this.columnBlob = instance.exports().function("sqlite3_column_blob");
         this.columnBytes = instance.exports().function("sqlite3_column_bytes");
         this.columnTableName = instance.exports().function("sqlite3_column_table_name");
+        this.columnMetadata = instance.exports().function("sqlite3_table_column_metadata");
         this.bindInt = instance.exports().function("sqlite3_bind_int");
         this.bindLong = instance.exports().function("sqlite3_bind_int64");
         this.bindDouble = instance.exports().function("sqlite3_bind_double");
@@ -276,6 +278,36 @@ public class WasmDBExports {
 
     public int columnDeclType(int stmtPtr, int col) {
         return (int) columnDeclType.apply(stmtPtr, col)[0];
+    }
+
+    //    sqlite3 *db,                /* Connection handle */
+    //    const char *zDbName,        /* Database name or NULL */
+    //    const char *zTableName,     /* Table name */
+    //    const char *zColumnName,    /* Column name */
+    //    char const **pzDataType,    /* OUTPUT: Declared data type */
+    //    char const **pzCollSeq,     /* OUTPUT: Collation sequence name */
+    //    int *pNotNull,              /* OUTPUT: True if NOT NULL constraint exists */
+    //    int *pPrimaryKey,           /* OUTPUT: True if column part of PK */
+    //    int *pAutoinc               /* OUTPUT: True if column is auto-increment */
+    public int columnMetadata(
+            int dbPtr,
+            int tableNamePtr,
+            int columnNamePtr,
+            int pNotNullPtr,
+            int pPrimaryKeyPtr,
+            int pAutoIncPtr) {
+        return (int)
+                columnMetadata
+                        .apply(
+                                dbPtr,
+                                0,
+                                tableNamePtr,
+                                columnNamePtr,
+                                0,
+                                0,
+                                pNotNullPtr,
+                                pPrimaryKeyPtr,
+                                pAutoIncPtr)[0];
     }
 
     public int columnName(int stmtPtr, int col) {
