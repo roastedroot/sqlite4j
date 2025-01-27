@@ -863,6 +863,10 @@ public class WasmDB extends DB {
      * @return a native pointer to validate memory is properly cleaned up in unit tests
      */
     long getProgressHandler() throws SQLException {
+        if (dbPtr == 0 || dbPtrPtr == 0) {
+            return 0L;
+        }
+        
         if (ProgressHandlerStore.isEmpty(dbPtr())) {
             return 0L;
         } else {
@@ -876,6 +880,10 @@ public class WasmDB extends DB {
      * @return a native pointer to validate memory is properly cleaned up in unit tests
      */
     long getBusyHandler() throws SQLException {
+        if (dbPtr == 0 || dbPtrPtr == 0) {
+            return 0L;
+        }
+
         if (BusyHandlerStore.isEmpty(dbPtr())) {
             return 0L;
         } else {
