@@ -34,16 +34,8 @@ export WASI_SDK_PATH=${SCRIPT_DIR}/wasi-sdk
 rm -f ${SCRIPT_DIR}/libsqlite3.wasm
 rm -f ${SCRIPT_DIR}/libsqlite3-opt.wasm
 
-# rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite_wrapper.c
-# cp ${SCRIPT_DIR}/sqlite_wrapper.c ${SCRIPT_DIR}/sqlite-amalgamation/
-
 rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite3_helpers.c
 cp ${SCRIPT_DIR}/sqlite3_helpers.c ${SCRIPT_DIR}/sqlite-amalgamation/
-
-rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite_opt.h
-rm -f ${SCRIPT_DIR}/sqlite-amalgamation/sqlite_cfg.h
-cp ${SCRIPT_DIR}/sqlite_opt.h ${SCRIPT_DIR}/sqlite-amalgamation/
-cp ${SCRIPT_DIR}/sqlite_cfg.h ${SCRIPT_DIR}/sqlite-amalgamation/
 
 (
     cd ${SCRIPT_DIR}/sqlite-amalgamation
@@ -54,8 +46,9 @@ cp ${SCRIPT_DIR}/sqlite_cfg.h ${SCRIPT_DIR}/sqlite-amalgamation/
         -Wl,--export-all \
         -Wl,--import-undefined \
         -Wl,--no-entry \
-        -Wl,--initial-memory=327680 \
+		-Wl,--initial-memory=32768000 \
         -Wl,--stack-first \
+		-Wl,--strip-debug \
         -mnontrapping-fptoint -msign-ext \
         -fno-stack-protector -fno-stack-clash-protection \
         -mmutable-globals -mmultivalue \
@@ -83,10 +76,21 @@ cp ${SCRIPT_DIR}/sqlite_cfg.h ${SCRIPT_DIR}/sqlite-amalgamation/
 	    -DSQLITE_MAX_FUNCTION_ARG=127 \
 	    -DSQLITE_MAX_ATTACHED=125 \
 	    -DSQLITE_MAX_PAGE_COUNT=4294967294 \
-	    -DSQLITE_DISABLE_PAGECACHE_OVERFLOW_STATS
+	    -DSQLITE_DISABLE_PAGECACHE_OVERFLOW_STATS \
+		-DSQLITE_USE_ALLOCA=1
+
+		# Options that would not work on Wasm
         # -DSQLITE_MAX_MMAP_SIZE=1099511627776 \
         # -DSQLITE_THREADSAFE=1 \
 )
 
+# 
+# This step seems not needed after using "-Wl,--strip-debug"
+# 866873 libsqlite3-opt.wasm
+# 864174 libsqlite3.wasm
+# TODO: re-evaluate this usage
 ${SCRIPT_DIR}/binaryen/bin/wasm-opt -g --strip --strip-producers -c -O3 \
-    ${SCRIPT_DIR}/libsqlite3.wasm -o ${SCRIPT_DIR}/libsqlite3-opt.wasm
+    ${SCRIPT_DIR}/libsqlite3.wasm -o ${SCRIPT_DIR}/libsqlite3-opt.wasm \
+	--enable-mutable-globals --enable-multivalue \
+	--enable-bulk-memory --enable-reference-types \
+	--enable-nontrapping-float-to-int --enable-sign-ext

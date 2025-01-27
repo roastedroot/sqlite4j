@@ -134,7 +134,12 @@ public class WasmDB extends DB {
                 Instance.builder(MODULE)
                         .withMachineFactory(SQLiteModule::create)
                         .withImportValues(imports())
-                        .withMemoryLimits(new MemoryLimits(10, MemoryLimits.MAX_PAGES))
+                        // compile time option: -Wl,--initial-memory=327680
+                        // means 5 pages initial memory
+                        // increased with 3 more zeroes and now the test is passing
+                        // in a decent time
+                        // TODO: find as tradeoff between QueryTest.github720 and JDBCTest.hammer
+                        .withMemoryLimits(new MemoryLimits(500))
                         .build();
         exports = new WasmDBExports(instance);
     }
@@ -589,6 +594,7 @@ public class WasmDB extends DB {
     public void result_text(long context, String val) throws SQLException {
         WasmDBExports.StringPtrSize txt = exports.allocString(val);
         exports.resultText((int) context, txt.ptr(), txt.size());
+        exports.free(txt.ptr());
     }
 
     @Override
@@ -634,6 +640,7 @@ public class WasmDB extends DB {
         int blobPtr = exports.valueBlob(valuePtrPtr);
         int length = exports.valueBytes(valuePtrPtr);
         byte[] blob = instance.memory().readBytes(blobPtr, length);
+        exports.free(blobPtr);
 
         return blob;
     }
@@ -667,13 +674,17 @@ public class WasmDB extends DB {
         int namePtr = exports.allocCString(name);
         int userData = UDFStore.registerFunction(f);
 
+        int result;
         if (f instanceof Function.Aggregate) {
             boolean isWindow = f instanceof Function.Window;
-            return exports.createFunctionAggregate(
-                    dbPtr(), namePtr, nArgs, flags, userData, isWindow);
+            result =
+                    exports.createFunctionAggregate(
+                            dbPtr(), namePtr, nArgs, flags, userData, isWindow);
         } else {
-            return exports.createFunction(dbPtr(), namePtr, nArgs, flags, userData);
+            result = exports.createFunction(dbPtr(), namePtr, nArgs, flags, userData);
         }
+        exports.free(namePtr);
+        return result;
     }
 
     @Override

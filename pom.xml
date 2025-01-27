@@ -192,7 +192,7 @@
                     </goals>
                     <configuration>
                     <name>com.github.andreaTP.sqlite.wasm.SQLite</name>
-                    <wasmFile>${project.basedir}/wasm-lib/libsqlite3-opt.wasm</wasmFile>
+                    <wasmFile>${project.basedir}/wasm-lib/libsqlite3.wasm</wasmFile>
                     </configuration>
                 </execution>
                 </executions>
