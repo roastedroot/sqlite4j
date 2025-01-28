@@ -624,8 +624,11 @@ public class WasmDB extends DB {
     @Override
     public String column_decltype(long stmtPtrPtr, int col) throws SQLException {
         int ptr = exports.columnDeclType(exports.ptr((int) stmtPtrPtr), col);
-        var x = instance.memory().readCString(ptr);
-        return x;
+        if (ptr == 0) {
+            return null;
+        } else {
+            return instance.memory().readCString(ptr);
+        }
     }
 
     @Override
