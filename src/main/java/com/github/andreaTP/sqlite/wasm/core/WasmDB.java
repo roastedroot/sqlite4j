@@ -24,6 +24,7 @@ import com.github.andreaTP.sqlite.wasm.wasm.ProgressHandlerStore;
 import com.github.andreaTP.sqlite.wasm.wasm.UDFStore;
 import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -854,22 +855,96 @@ public class WasmDB extends DB {
         return result;
     }
 
+    private static final int DEFAULT_BACKUP_BUSY_SLEEP_TIME_MILLIS = 100;
+    private static final int DEFAULT_BACKUP_NUM_BUSY_BEFORE_FAIL = 3;
+    private static final int DEFAULT_PAGES_PER_BACKUP_STEP = 100;
+
+    private static final int SQLITE_OPEN_READONLY =         0x00000001;  /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_READWRITE =        0x00000002;  /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_CREATE =           0x00000004;  /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_DELETEONCLOSE =    0x00000008;  /* VFS only */
+    private static final int SQLITE_OPEN_EXCLUSIVE =        0x00000010;  /* VFS only */
+    private static final int SQLITE_OPEN_AUTOPROXY =        0x00000020;  /* VFS only */
+    private static final int SQLITE_OPEN_URI =              0x00000040;  /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_MEMORY =           0x00000080;  /* Ok for sqlite3_open_v2() */
+
     @Override
     public int backup(String dbName, String destFileName, ProgressObserver observer)
             throws SQLException {
-        throw new RuntimeException("backup not implemented in WasmDB");
+        return this.backup(dbName, destFileName, observer,
+                DEFAULT_BACKUP_BUSY_SLEEP_TIME_MILLIS,
+                DEFAULT_BACKUP_NUM_BUSY_BEFORE_FAIL,
+                DEFAULT_PAGES_PER_BACKUP_STEP);
     }
 
+    // TODO: backup is not respecting the SQLite semantics, re-iterate
+    // after we have a stable decision on the file/filesystem handling
     @Override
     public int backup(
             String dbName,
             String destFileName,
             ProgressObserver observer,
             int sleepTimeMillis,
-            int nTimeouts,
+            int nTimeoutLimit,
             int pagesPerStep)
             throws SQLException {
-        throw new RuntimeException("backup not implemented in WasmDB");
+        int originNamePtr = exports.allocCString(dbName);
+        int destNamePtr = exports.allocCString(destFileName);
+        int mainStrPtr = exports.allocCString("main");
+        int destDbPtr = exports.malloc(PTR_SIZE);
+
+        int flags = SQLITE_OPEN_READWRITE + SQLITE_OPEN_CREATE;
+        if (destFileName.startsWith("file:")) {
+            flags += SQLITE_OPEN_URI;
+        }
+
+        // TODO: verify why we need this dance around VFS
+        Path dest = fs.getPath(destFileName);
+        try {
+            Files.createDirectories(dest);
+            Files.deleteIfExists(dest);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("??? ", e);
+        }
+
+        int rc = exports.openV2(destNamePtr, destDbPtr, flags, 0);
+        int nTimeout = 0;
+        if (rc == SQLITE_OK) {
+            int pBackup = exports.backupInit(exports.ptr(destDbPtr), mainStrPtr, dbPtr(), originNamePtr);
+            do {
+                rc = exports.backupStep(pBackup, pagesPerStep);
+
+                // if the step completed successfully, update progress
+                if (observer != null && (rc == SQLITE_OK || rc == SQLITE_DONE)) {
+                    int remaining = exports.backupRemaining(pBackup);
+                    int pageCount = exports.backupPageCount(pBackup);
+                    observer.progress(remaining, pageCount);
+                }
+
+                if (rc == SQLITE_BUSY || rc == SQLITE_LOCKED) {
+                    if (nTimeout++ >= nTimeoutLimit) {
+                        break;
+                    }
+                    exports.sleep(sleepTimeMillis);
+                }
+            } while (rc == SQLITE_OK || rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
+
+            exports.backupFinish(pBackup);
+            rc = exports.extendedErrorcode(exports.ptr(destDbPtr));
+        }
+
+        exports.free(originNamePtr);
+        exports.free(destNamePtr);
+        exports.free(destDbPtr);
+
+        // and now copy the backup file from the VFS to the real disk
+        Path realDiskDest = Path.of(destFileName);
+        try {
+            java.nio.file.Files.copy(dest, realDiskDest, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return rc;
     }
 
     @Override

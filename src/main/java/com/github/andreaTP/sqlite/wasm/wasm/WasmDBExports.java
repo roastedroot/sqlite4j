@@ -80,6 +80,12 @@ public class WasmDBExports {
     private final ExportFunction updateHook;
     private final ExportFunction commitHook;
     private final ExportFunction rollbackHook;
+    private final ExportFunction backupInit;
+    private final ExportFunction backupStep;
+    private final ExportFunction backupFinish;
+    private final ExportFunction backupRemaining;
+    private final ExportFunction backupPageCount;
+    private final ExportFunction sleep;
 
     private final int xFuncPtr;
     private final int xStepPtr;
@@ -168,6 +174,12 @@ public class WasmDBExports {
         this.serialize = instance.exports().function("sqlite3_serialize");
         this.deserialize = instance.exports().function("sqlite3_deserialize");
         this.createCollation = instance.exports().function("sqlite3_create_collation_v2");
+        this.backupInit = instance.exports().function("sqlite3_backup_init");
+        this.backupStep = instance.exports().function("sqlite3_backup_step");
+        this.backupFinish = instance.exports().function("sqlite3_backup_finish");
+        this.backupRemaining = instance.exports().function("sqlite3_backup_remaining");
+        this.backupPageCount = instance.exports().function("sqlite3_backup_pagecount");
+        this.sleep = instance.exports().function("sqlite3_sleep");
 
         this.progressHandler = instance.exports().function("sqlite3_progress_handler");
         this.busyHandler = instance.exports().function("sqlite3_busy_handler");
@@ -576,5 +588,29 @@ public class WasmDBExports {
 
     public void deleteRollbackHook(int dbPtr) {
         rollbackHook.apply(dbPtr, 0, 0);
+    }
+
+    public int backupInit(int destPtr, int destNamePtr, int sourcePtr, int sourceNamePtr) {
+        return (int) backupInit.apply(destPtr, destNamePtr, sourcePtr, sourceNamePtr)[0];
+    }
+
+    public int backupStep(int backupPtr, int nPages) {
+        return (int) backupStep.apply(backupPtr, nPages)[0];
+    }
+
+    public int backupFinish(int backupPtr) {
+        return (int) backupFinish.apply(backupPtr)[0];
+    }
+
+    public int backupRemaining(int backupPtr) {
+        return (int) backupRemaining.apply(backupPtr)[0];
+    }
+
+    public int backupPageCount(int backupPtr) {
+        return (int) backupPageCount.apply(backupPtr)[0];
+    }
+
+    public void sleep(int ms) {
+        sleep.apply(ms);
     }
 }
