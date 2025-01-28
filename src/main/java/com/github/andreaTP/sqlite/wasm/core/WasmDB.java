@@ -185,6 +185,7 @@ public class WasmDB extends DB {
                         .inheritSystem()
                         .withDirectory(target.toString(), target)
                         .build();
+
         wasiPreview1 = WasiPreview1.builder().withOptions(wasiOpts).build();
         instance =
                 Instance.builder(MODULE)
@@ -201,6 +202,7 @@ public class WasmDB extends DB {
     }
 
     // TODO: find a better way for doing this
+    // throw a wrapper exception and unwrap it in the "safeRun"
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
     }
@@ -427,7 +429,7 @@ public class WasmDB extends DB {
         Path origin = Path.of(filename);
         Path dest = fs.getPath(filename);
         if (!filename.isEmpty() && Files.notExists(dest)) {
-            // TODO: verify if works on windows
+            // TODO: verify if everything works on windows
             if (Files.exists(origin)) {
                 try (InputStream is = new FileInputStream(filename)) {
                     Files.createDirectories(dest);
@@ -449,7 +451,6 @@ public class WasmDB extends DB {
                     if (dest.getParent() != null) {
                         Files.createDirectories(dest.getParent());
                     }
-                    Files.createFile(dest);
                 } catch (IOException e) {
                     SQLException msg =
                             DB.newSQLException(
