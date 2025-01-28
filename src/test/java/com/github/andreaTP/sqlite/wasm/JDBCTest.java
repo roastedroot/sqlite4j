@@ -17,11 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class JDBCTest {
     @Test
+    @Disabled("Dynamic extension loading is not supported in WASM")
     public void enableLoadExtensionTest() throws Exception {
         Properties prop = new Properties();
         prop.setProperty("enable_load_extension", "true");

@@ -200,6 +200,7 @@ public class WasmDB extends DB {
         exports = new WasmDBExports(instance);
     }
 
+    // TODO: find a better way for doing this
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
     }
@@ -443,13 +444,18 @@ public class WasmDB extends DB {
                     throw new SQLException(msg.getMessage(), e);
                 }
             } else {
+                // TODO: not sure why BusyHandler test fails if the database file doesn't exists
                 try {
-                    Files.createDirectories(dest);
-                    // the "Files.notExists(dest)" should prevent this from happening
-                    // still is observable in the tests
-                    Files.deleteIfExists(dest);
+                    if (dest.getParent() != null) {
+                        Files.createDirectories(dest.getParent());
+                    }
+                    Files.createFile(dest);
                 } catch (IOException e) {
-                    throw new SQLException("Failed to create in memory the file: " + filename, e);
+                    SQLException msg =
+                            DB.newSQLException(
+                                    SQLITE_CANTOPEN,
+                                    "Failed to map to memory the file: " + filename);
+                    throw new SQLException(msg.getMessage(), e);
                 }
             }
         }
@@ -554,12 +560,14 @@ public class WasmDB extends DB {
 
     @Override
     public int shared_cache(boolean enable) throws SQLException {
-        throw new RuntimeException("shared_changes not implemented in WasmDB");
+        return exports.sharedCache(enable);
     }
 
     @Override
     public int enable_load_extension(boolean enable) throws SQLException {
-        // TODO: extensions are not enabled in WASM/WASI
+        if (enable) {
+            throw new RuntimeException("load extension cannot be enabled in WasmDB");
+        }
         return 0;
     }
 

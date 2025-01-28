@@ -86,6 +86,7 @@ public class WasmDBExports {
     private final ExportFunction backupRemaining;
     private final ExportFunction backupPageCount;
     private final ExportFunction sleep;
+    private final ExportFunction sharedCache;
 
     private final int xFuncPtr;
     private final int xStepPtr;
@@ -180,6 +181,7 @@ public class WasmDBExports {
         this.backupRemaining = instance.exports().function("sqlite3_backup_remaining");
         this.backupPageCount = instance.exports().function("sqlite3_backup_pagecount");
         this.sleep = instance.exports().function("sqlite3_sleep");
+        this.sharedCache = instance.exports().function("sqlite3_enable_shared_cache");
 
         this.progressHandler = instance.exports().function("sqlite3_progress_handler");
         this.busyHandler = instance.exports().function("sqlite3_busy_handler");
@@ -612,5 +614,9 @@ public class WasmDBExports {
 
     public void sleep(int ms) {
         sleep.apply(ms);
+    }
+
+    public int sharedCache(boolean enable) {
+        return (int) sharedCache.apply((enable) ? 1 : 0)[0];
     }
 }

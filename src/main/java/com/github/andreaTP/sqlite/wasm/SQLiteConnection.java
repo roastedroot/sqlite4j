@@ -295,20 +295,21 @@ public abstract class SQLiteConnection implements Connection {
         DB db = null;
         try {
             // TODO: this logic doesn't work as expected in Savepoint Test
-            if (!fileName.isEmpty()
-                    && (fileName.startsWith("file:")
-                            && (fileName.contains("mode=memory") || fileName.contains(":memory:"))
-                            && fileName.contains("cache=shared"))) {
-                var key = newProps.hashCode();
-                if (sharedMemoryCache.containsKey(key)) {
-                    db = sharedMemoryCache.get(key);
-                } else {
-                    db = new WasmDB(fs, url, fileName, config);
-                    sharedMemoryCache.put(key, db);
-                }
-            } else {
-                db = new WasmDB(fs, url, fileName, config);
-            }
+            //            if (!fileName.isEmpty()
+            //                    && (fileName.startsWith("file:")
+            //                            && (fileName.contains("mode=memory") ||
+            // fileName.contains(":memory:"))
+            //                            && fileName.contains("cache=shared"))) {
+            //                var key = newProps.hashCode();
+            //                if (sharedMemoryCache.containsKey(key)) {
+            //                    db = sharedMemoryCache.get(key);
+            //                } else {
+            //                    db = new WasmDB(fs, url, fileName, config);
+            //                    sharedMemoryCache.put(key, db);
+            //                }
+            //            } else {
+            db = new WasmDB(fs, url, fileName, config);
+            //            }
         } catch (Exception e) {
             SQLException err = new SQLException("Error opening connection");
             err.initCause(e);
