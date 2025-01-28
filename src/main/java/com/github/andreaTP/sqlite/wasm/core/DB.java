@@ -57,8 +57,8 @@ public abstract class DB implements Codes {
     /** Tracer for statements to avoid unfinalized statements on db close. */
     private final Set<SafeStmtPtr> stmts = ConcurrentHashMap.newKeySet();
 
-    private final Set<SQLiteUpdateListener> updateListeners = new HashSet<>();
-    private final Set<SQLiteCommitListener> commitListeners = new HashSet<>();
+    protected final Set<SQLiteUpdateListener> updateListeners = new HashSet<>();
+    protected final Set<SQLiteCommitListener> commitListeners = new HashSet<>();
 
     public DB(String url, String fileName, SQLiteConfig config) throws SQLException {
         this.url = url;

@@ -3,6 +3,7 @@ package com.github.andreaTP.sqlite.wasm;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.andreaTP.sqlite.wasm.core.DB;
+import com.github.andreaTP.sqlite.wasm.core.WasmDBHelper;
 import java.io.File;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -212,14 +214,14 @@ public class ListenerTest {
         CountingSQLiteUpdateListener updateListener = new CountingSQLiteUpdateListener();
 
         connectionOne.addUpdateListener(updateListener);
-        // Assertions.assertThat(NativeDBHelper.getUpdateListener(database)).isNotEqualTo(0);
-        // connectionOne.removeUpdateListener(updateListener);
-        // assertThat(NativeDBHelper.getUpdateListener(database)).isEqualTo(0);
+        Assertions.assertThat(WasmDBHelper.getUpdateListener(database)).isNotEqualTo(0);
+        connectionOne.removeUpdateListener(updateListener);
+        assertThat(WasmDBHelper.getUpdateListener(database)).isEqualTo(0);
 
-        // connectionOne.addUpdateListener(updateListener);
-        // assertThat(NativeDBHelper.getUpdateListener(database)).isNotEqualTo(0);
-        // connectionOne.close();
-        // assertThat(NativeDBHelper.getUpdateListener(database)).isEqualTo(0);
+        connectionOne.addUpdateListener(updateListener);
+        assertThat(WasmDBHelper.getUpdateListener(database)).isNotEqualTo(0);
+        connectionOne.close();
+        assertThat(WasmDBHelper.getUpdateListener(database)).isEqualTo(0);
     }
 
     /**

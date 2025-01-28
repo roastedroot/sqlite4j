@@ -17,6 +17,7 @@ import com.github.andreaTP.sqlite.wasm.Function;
 import com.github.andreaTP.sqlite.wasm.ProgressHandler;
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
 import com.github.andreaTP.sqlite.wasm.SQLiteModule;
+import com.github.andreaTP.sqlite.wasm.SQLiteUpdateListener;
 import com.github.andreaTP.sqlite.wasm.wasm.BusyHandlerStore;
 import com.github.andreaTP.sqlite.wasm.wasm.CollationStore;
 import com.github.andreaTP.sqlite.wasm.wasm.ProgressHandlerStore;
@@ -130,6 +131,32 @@ public class WasmDB extends DB {
                                 List.of(ValueType.I32),
                                 List.of(),
                                 (inst, args) -> xDestroyCollation(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xUpdate",
+                                List.of(
+                                        ValueType.I32,
+                                        ValueType.I32,
+                                        ValueType.I32,
+                                        ValueType.I32,
+                                        ValueType.I64),
+                                List.of(),
+                                (inst, args) -> xUpdate(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xCommit",
+                                List.of(ValueType.I32),
+                                List.of(ValueType.I32),
+                                (inst, args) -> xCommit(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xRollback",
+                                List.of(ValueType.I32),
+                                List.of(),
+                                (inst, args) -> xRollback(args)))
                 .build();
     }
 
@@ -331,6 +358,57 @@ public class WasmDB extends DB {
         return null;
     }
 
+    private static final int SQLITE_INSERT = 18;
+    private static final int SQLITE_DELETE = 9;
+    private static final int SQLITE_UPDATE = 23;
+
+    private SQLiteUpdateListener.Type getUpdateType(int updateType) {
+        switch (updateType) {
+            case SQLITE_INSERT:
+                return SQLiteUpdateListener.Type.INSERT;
+            case SQLITE_DELETE:
+                return SQLiteUpdateListener.Type.DELETE;
+            case SQLITE_UPDATE:
+                return SQLiteUpdateListener.Type.UPDATE;
+            default:
+                throw new IllegalArgumentException(
+                        "Update type cannot be identified: " + updateType);
+        }
+    }
+
+    private long[] xUpdate(long[] args) {
+        int userData = (int) args[0]; // Unused
+        SQLiteUpdateListener.Type type = getUpdateType((int) args[1]);
+        int dbNamePtr = (int) args[2];
+        int tablePtr = (int) args[3];
+        long rowId = args[4];
+
+        String dbName = instance.memory().readCString(dbNamePtr);
+        String tableName = instance.memory().readCString(tablePtr);
+
+        this.updateListeners.forEach(ul -> ul.onUpdate(type, dbName, tableName, rowId));
+
+        // TODO: doublecheck if we do a double free
+        exports.free(dbNamePtr);
+        exports.free(tablePtr);
+
+        // no tmp data to be cleaned up
+        // the collation will be freed with an explicit destroy call
+        return null;
+    }
+
+    private long[] xCommit(long[] args) {
+        commitListeners.forEach(cl -> cl.onCommit());
+
+        return new long[] {0};
+    }
+
+    private long[] xRollback(long[] args) {
+        commitListeners.forEach(cl -> cl.onRollback());
+
+        return null;
+    }
+
     // safe access to the dbPointer
     private int dbPtr() throws SQLException {
         if (this.dbPtrPtr == 0 || this.dbPtr == 0) {
@@ -486,6 +564,8 @@ public class WasmDB extends DB {
         int dbPtr = dbPtr();
         ProgressHandlerStore.free(dbPtr);
         BusyHandlerStore.free(dbPtr);
+        updateListeners.clear();
+        commitListeners.clear();
 
         int res = exports.close(dbPtr);
         if (res != SQLITE_OK) {
@@ -871,12 +951,22 @@ public class WasmDB extends DB {
 
     @Override
     void set_commit_listener(boolean enabled) {
-        throw new RuntimeException("set_commit_listener not implemented in WasmDB");
+        if (enabled) {
+            exports.commitHook(this.dbPtr, 0);
+            exports.rollbackHook(this.dbPtr, 0);
+        } else {
+            exports.deleteCommitHook(this.dbPtr);
+            exports.deleteRollbackHook(this.dbPtr);
+        }
     }
 
     @Override
     void set_update_listener(boolean enabled) {
-        throw new RuntimeException("set_update_listener not implemented in WasmDB");
+        if (enabled) {
+            exports.updateHook(this.dbPtr, 0);
+        } else {
+            exports.deleteUpdateHook(this.dbPtr);
+        }
     }
 
     @Override
@@ -942,6 +1032,18 @@ public class WasmDB extends DB {
         }
 
         if (BusyHandlerStore.isEmpty(dbPtr())) {
+            return 0L;
+        } else {
+            return 1L;
+        }
+    }
+
+    long getUpdateListener() {
+        if (dbPtr == 0 || dbPtrPtr == 0) {
+            return 0L;
+        }
+
+        if (updateListeners.isEmpty()) {
             return 0L;
         } else {
             return 1L;
@@ -1042,6 +1144,32 @@ public class WasmDB extends DB {
                                                     new HostFunction(
                                                             "env",
                                                             "xDestroyCollation",
+                                                            List.of(ValueType.I32),
+                                                            List.of(),
+                                                            (inst, args) -> null))
+                                            .addFunction(
+                                                    new HostFunction(
+                                                            "env",
+                                                            "xUpdate",
+                                                            List.of(
+                                                                    ValueType.I32,
+                                                                    ValueType.I32,
+                                                                    ValueType.I32,
+                                                                    ValueType.I32,
+                                                                    ValueType.I64),
+                                                            List.of(),
+                                                            (inst, args) -> null))
+                                            .addFunction(
+                                                    new HostFunction(
+                                                            "env",
+                                                            "xCommit",
+                                                            List.of(ValueType.I32),
+                                                            List.of(ValueType.I32),
+                                                            (inst, args) -> null))
+                                            .addFunction(
+                                                    new HostFunction(
+                                                            "env",
+                                                            "xRollback",
                                                             List.of(ValueType.I32),
                                                             List.of(),
                                                             (inst, args) -> null))

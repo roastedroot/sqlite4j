@@ -42,7 +42,6 @@ public class WasmDBHelper {
      * @return the pointer of the update listener
      */
     public static long getUpdateListener(DB nativeDB) {
-        // return ((WasmDB) nativeDB).getUpdateListener();
-        return 0;
+        return ((WasmDB) nativeDB).getUpdateListener();
     }
 }

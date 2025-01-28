@@ -104,3 +104,33 @@ __attribute__((
 extern void* xDestroyCollationPtr() {
     return &xDestroyCollation;
 }
+
+extern void xUpdate(void *userData, int type, char const *dbPtr, char const *tablePtr, sqlite3_int64 rowId)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xUpdate"),
+));
+
+extern void* xUpdatePtr() {
+    return &xUpdate;
+}
+
+extern int xCommit(void *userData)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xCommit"),
+));
+
+extern void* xCommitPtr() {
+    return &xCommit;
+}
+
+extern void xRollback(void *userData)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xRollback"),
+));
+
+extern void* xRollbackPtr() {
+    return &xRollback;
+}

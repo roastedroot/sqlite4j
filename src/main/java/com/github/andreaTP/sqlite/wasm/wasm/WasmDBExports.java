@@ -77,6 +77,9 @@ public class WasmDBExports {
     private final ExportFunction serialize;
     private final ExportFunction deserialize;
     private final ExportFunction createCollation;
+    private final ExportFunction updateHook;
+    private final ExportFunction commitHook;
+    private final ExportFunction rollbackHook;
 
     private final int xFuncPtr;
     private final int xStepPtr;
@@ -88,6 +91,9 @@ public class WasmDBExports {
     private final int xBusyPtr;
     private final int xCompare;
     private final int xDestroyCollation;
+    private final int xUpdatePtr;
+    private final int xCommitPtr;
+    private final int xRollbackPtr;
 
     public WasmDBExports(Instance instance) {
         this.instance = instance;
@@ -103,6 +109,9 @@ public class WasmDBExports {
         this.xCompare = (int) instance.exports().function("xComparePtr").apply()[0];
         this.xDestroyCollation =
                 (int) instance.exports().function("xDestroyCollationPtr").apply()[0];
+        this.xUpdatePtr = (int) instance.exports().function("xUpdatePtr").apply()[0];
+        this.xCommitPtr = (int) instance.exports().function("xCommitPtr").apply()[0];
+        this.xRollbackPtr = (int) instance.exports().function("xRollbackPtr").apply()[0];
 
         this.realloc = instance.exports().function("realloc");
         this.malloc = instance.exports().function("malloc");
@@ -162,6 +171,9 @@ public class WasmDBExports {
 
         this.progressHandler = instance.exports().function("sqlite3_progress_handler");
         this.busyHandler = instance.exports().function("sqlite3_busy_handler");
+        this.updateHook = instance.exports().function("sqlite3_update_hook");
+        this.commitHook = instance.exports().function("sqlite3_commit_hook");
+        this.rollbackHook = instance.exports().function("sqlite3_rollback_hook");
     }
 
     public int malloc(int size) {
@@ -540,5 +552,29 @@ public class WasmDBExports {
 
     public int destroyCollation(int dbPtr, int zNamePtr) {
         return (int) createCollation.apply(dbPtr, zNamePtr, 0, 0, 0, 0)[0];
+    }
+
+    public void updateHook(int dbPtr, int userData) {
+        updateHook.apply(dbPtr, xUpdatePtr, userData);
+    }
+
+    public void deleteUpdateHook(int dbPtr) {
+        updateHook.apply(dbPtr, 0, 0);
+    }
+
+    public void commitHook(int dbPtr, int userData) {
+        commitHook.apply(dbPtr, xCommitPtr, userData);
+    }
+
+    public void deleteCommitHook(int dbPtr) {
+        commitHook.apply(dbPtr, 0, 0);
+    }
+
+    public void rollbackHook(int dbPtr, int userData) {
+        rollbackHook.apply(dbPtr, xRollbackPtr, userData);
+    }
+
+    public void deleteRollbackHook(int dbPtr) {
+        rollbackHook.apply(dbPtr, 0, 0);
     }
 }
