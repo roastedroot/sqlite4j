@@ -16,6 +16,8 @@ import com.github.andreaTP.sqlite.wasm.Collation;
 import com.github.andreaTP.sqlite.wasm.Function;
 import com.github.andreaTP.sqlite.wasm.ProgressHandler;
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
+import com.github.andreaTP.sqlite.wasm.SQLiteErrorCode;
+import com.github.andreaTP.sqlite.wasm.SQLiteException;
 import com.github.andreaTP.sqlite.wasm.SQLiteModule;
 import com.github.andreaTP.sqlite.wasm.SQLiteUpdateListener;
 import com.github.andreaTP.sqlite.wasm.wasm.BusyHandlerStore;
@@ -24,7 +26,6 @@ import com.github.andreaTP.sqlite.wasm.wasm.ProgressHandlerStore;
 import com.github.andreaTP.sqlite.wasm.wasm.UDFStore;
 import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -859,19 +860,22 @@ public class WasmDB extends DB {
     private static final int DEFAULT_BACKUP_NUM_BUSY_BEFORE_FAIL = 3;
     private static final int DEFAULT_PAGES_PER_BACKUP_STEP = 100;
 
-    private static final int SQLITE_OPEN_READONLY =         0x00000001;  /* Ok for sqlite3_open_v2() */
-    private static final int SQLITE_OPEN_READWRITE =        0x00000002;  /* Ok for sqlite3_open_v2() */
-    private static final int SQLITE_OPEN_CREATE =           0x00000004;  /* Ok for sqlite3_open_v2() */
-    private static final int SQLITE_OPEN_DELETEONCLOSE =    0x00000008;  /* VFS only */
-    private static final int SQLITE_OPEN_EXCLUSIVE =        0x00000010;  /* VFS only */
-    private static final int SQLITE_OPEN_AUTOPROXY =        0x00000020;  /* VFS only */
-    private static final int SQLITE_OPEN_URI =              0x00000040;  /* Ok for sqlite3_open_v2() */
-    private static final int SQLITE_OPEN_MEMORY =           0x00000080;  /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_READONLY = 0x00000001; /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_READWRITE = 0x00000002; /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_CREATE = 0x00000004; /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_DELETEONCLOSE = 0x00000008; /* VFS only */
+    private static final int SQLITE_OPEN_EXCLUSIVE = 0x00000010; /* VFS only */
+    private static final int SQLITE_OPEN_AUTOPROXY = 0x00000020; /* VFS only */
+    private static final int SQLITE_OPEN_URI = 0x00000040; /* Ok for sqlite3_open_v2() */
+    private static final int SQLITE_OPEN_MEMORY = 0x00000080; /* Ok for sqlite3_open_v2() */
 
     @Override
     public int backup(String dbName, String destFileName, ProgressObserver observer)
             throws SQLException {
-        return this.backup(dbName, destFileName, observer,
+        return this.backup(
+                dbName,
+                destFileName,
+                observer,
                 DEFAULT_BACKUP_BUSY_SLEEP_TIME_MILLIS,
                 DEFAULT_BACKUP_NUM_BUSY_BEFORE_FAIL,
                 DEFAULT_PAGES_PER_BACKUP_STEP);
@@ -904,13 +908,16 @@ public class WasmDB extends DB {
             Files.createDirectories(dest);
             Files.deleteIfExists(dest);
         } catch (IOException e) {
-            throw new IllegalArgumentException("??? ", e);
+            throw new SQLiteException(
+                    "failed to map to in-memory VFS " + e.getMessage(),
+                    SQLiteErrorCode.SQLITE_ERROR);
         }
 
         int rc = exports.openV2(destNamePtr, destDbPtr, flags, 0);
         int nTimeout = 0;
         if (rc == SQLITE_OK) {
-            int pBackup = exports.backupInit(exports.ptr(destDbPtr), mainStrPtr, dbPtr(), originNamePtr);
+            int pBackup =
+                    exports.backupInit(exports.ptr(destDbPtr), mainStrPtr, dbPtr(), originNamePtr);
             do {
                 rc = exports.backupStep(pBackup, pagesPerStep);
 
@@ -936,13 +943,17 @@ public class WasmDB extends DB {
         exports.free(originNamePtr);
         exports.free(destNamePtr);
         exports.free(destDbPtr);
+        exports.free(mainStrPtr);
 
         // and now copy the backup file from the VFS to the real disk
         Path realDiskDest = Path.of(destFileName);
         try {
             java.nio.file.Files.copy(dest, realDiskDest, StandardCopyOption.REPLACE_EXISTING);
+            Files.deleteIfExists(dest);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new SQLiteException(
+                    "failed to map to in-memory VFS " + e.getMessage(),
+                    SQLiteErrorCode.SQLITE_ERROR);
         }
         return rc;
     }
@@ -950,7 +961,13 @@ public class WasmDB extends DB {
     @Override
     public int restore(String dbName, String sourceFileName, ProgressObserver observer)
             throws SQLException {
-        throw new RuntimeException("restore not implemented in WasmDB");
+        return this.restore(
+                dbName,
+                sourceFileName,
+                observer,
+                DEFAULT_BACKUP_BUSY_SLEEP_TIME_MILLIS,
+                DEFAULT_BACKUP_NUM_BUSY_BEFORE_FAIL,
+                DEFAULT_PAGES_PER_BACKUP_STEP);
     }
 
     @Override
@@ -959,10 +976,64 @@ public class WasmDB extends DB {
             String sourceFileName,
             ProgressObserver observer,
             int sleepTimeMillis,
-            int nTimeouts,
+            int nTimeoutLimit,
             int pagesPerStep)
             throws SQLException {
-        throw new RuntimeException("restore not implemented in WasmDB");
+        int destNamePtr = exports.allocCString(dbName);
+        int sourceNamePtr = exports.allocCString(sourceFileName);
+        int mainStrPtr = exports.allocCString("main");
+        int sourceDbPtr = exports.malloc(PTR_SIZE);
+
+        int flags = SQLITE_OPEN_READONLY;
+        if (sourceFileName.startsWith("file:")) {
+            flags += SQLITE_OPEN_URI;
+        }
+
+        // and now copy the backup file from the VFS to the real disk
+        Path realDiskSource = Path.of(sourceFileName);
+        Path source = fs.getPath(sourceFileName);
+        try {
+            Files.createDirectories(source);
+            java.nio.file.Files.copy(realDiskSource, source, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new SQLiteException(
+                    "failed to map to in-memory VFS " + e.getMessage(),
+                    SQLiteErrorCode.SQLITE_ERROR);
+        }
+
+        int rc = exports.openV2(sourceNamePtr, sourceDbPtr, flags, 0);
+        int nTimeout = 0;
+        if (rc == SQLITE_OK) {
+            int pBackup =
+                    exports.backupInit(dbPtr(), destNamePtr, exports.ptr(sourceDbPtr), mainStrPtr);
+            do {
+                rc = exports.backupStep(pBackup, pagesPerStep);
+
+                // if the step completed successfully, update progress
+                if (observer != null && (rc == SQLITE_OK || rc == SQLITE_DONE)) {
+                    int remaining = exports.backupRemaining(pBackup);
+                    int pageCount = exports.backupPageCount(pBackup);
+                    observer.progress(remaining, pageCount);
+                }
+
+                if (rc == SQLITE_BUSY || rc == SQLITE_LOCKED) {
+                    if (nTimeout++ >= nTimeoutLimit) {
+                        break;
+                    }
+                    exports.sleep(sleepTimeMillis);
+                }
+            } while (rc == SQLITE_OK || rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
+
+            exports.backupFinish(pBackup);
+            rc = exports.extendedErrorcode(exports.ptr(sourceDbPtr));
+        }
+
+        exports.free(destNamePtr);
+        exports.free(destNamePtr);
+        exports.free(sourceDbPtr);
+        exports.free(mainStrPtr);
+
+        return rc;
     }
 
     @Override
