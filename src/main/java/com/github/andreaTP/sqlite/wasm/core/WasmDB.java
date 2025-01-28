@@ -6,6 +6,7 @@ import static com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports.SQLITE_UTF8;
 import com.dylibso.chicory.runtime.HostFunction;
 import com.dylibso.chicory.runtime.ImportValues;
 import com.dylibso.chicory.runtime.Instance;
+import com.dylibso.chicory.runtime.Memory;
 import com.dylibso.chicory.wasi.WasiOptions;
 import com.dylibso.chicory.wasi.WasiPreview1;
 import com.dylibso.chicory.wasm.WasmModule;
@@ -29,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -193,7 +195,7 @@ public class WasmDB extends DB {
                         // increased with 3 more zeroes and now the test is passing
                         // in a decent time
                         // TODO: find as tradeoff between QueryTest.github720 and JDBCTest.hammer
-                        .withMemoryLimits(new MemoryLimits(500))
+                        .withMemoryLimits(new MemoryLimits(500, Memory.RUNTIME_MAX_PAGES))
                         .build();
         exports = new WasmDBExports(instance);
     }
@@ -622,7 +624,8 @@ public class WasmDB extends DB {
     @Override
     public String column_decltype(long stmtPtrPtr, int col) throws SQLException {
         int ptr = exports.columnDeclType(exports.ptr((int) stmtPtrPtr), col);
-        return instance.memory().readCString(ptr);
+        var x = instance.memory().readCString(ptr);
+        return x;
     }
 
     @Override
@@ -905,7 +908,16 @@ public class WasmDB extends DB {
         // TODO: verify why we need this dance around VFS
         Path dest = fs.getPath(destFileName);
         try {
-            Files.createDirectories(dest);
+            Files.createDirectories(dest.getParent());
+        } catch (FileAlreadyExistsException e) {
+            // TODO: review carefully the rest of the usage of createDirectories
+            // createDirectories is failing
+        } catch (IOException e) {
+            throw new SQLiteException(
+                    "failed to map to in-memory VFS " + e.getMessage(),
+                    SQLiteErrorCode.SQLITE_ERROR);
+        }
+        try {
             Files.deleteIfExists(dest);
         } catch (IOException e) {
             throw new SQLiteException(
