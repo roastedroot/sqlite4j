@@ -42,7 +42,7 @@ public class CollationTest {
                 "REVERSE",
                 new Collation() {
                     @Override
-                    protected int xCompare(String str1, String str2) {
+                    public int xCompare(String str1, String str2) {
                         received.add(str1);
                         received.add(str2);
                         return str1.compareTo(str2) * -1;
@@ -73,7 +73,7 @@ public class CollationTest {
                 "UNICODE",
                 new Collation() {
                     @Override
-                    protected int xCompare(String str1, String str2) {
+                    public int xCompare(String str1, String str2) {
                         received.add(str1);
                         received.add(str2);
 
@@ -108,7 +108,7 @@ public class CollationTest {
                 "REVERSE",
                 new Collation() {
                     @Override
-                    protected int xCompare(String str1, String str2) {
+                    public int xCompare(String str1, String str2) {
                         return str1.compareTo(str2) * -1;
                     }
                 });
@@ -117,7 +117,7 @@ public class CollationTest {
                 "NORMAL",
                 new Collation() {
                     @Override
-                    protected int xCompare(String str1, String str2) {
+                    public int xCompare(String str1, String str2) {
                         return str1.compareTo(str2);
                     }
                 });
@@ -160,7 +160,7 @@ public class CollationTest {
                 "UNICODE",
                 new Collation() {
                     @Override
-                    protected int xCompare(String str1, String str2) {
+                    public int xCompare(String str1, String str2) {
                         received.add(str1);
                         received.add(str2);
 
@@ -191,7 +191,7 @@ public class CollationTest {
                 "c1",
                 new Collation() {
                     @Override
-                    protected int xCompare(String str1, String str2) {
+                    public int xCompare(String str1, String str2) {
                         valStr1 = str1;
                         valStr2 = str2;
                         return str1.compareTo(str2) * -1;

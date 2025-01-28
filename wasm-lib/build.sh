@@ -77,8 +77,10 @@ cp ${SCRIPT_DIR}/sqlite3_helpers.c ${SCRIPT_DIR}/sqlite-amalgamation/
 	    -DSQLITE_MAX_ATTACHED=125 \
 	    -DSQLITE_MAX_PAGE_COUNT=4294967294 \
 	    -DSQLITE_DISABLE_PAGECACHE_OVERFLOW_STATS \
-		-DSQLITE_USE_ALLOCA=1
+		-DSQLITE_USE_ALLOCA=1 \
 
+		# Use ALLOCA is an experiment, verify
+		# SQLITE_OMIT_LOAD_EXTENSION -> doesn't seems to be used in the WASI build
 		# Options that would not work on Wasm
         # -DSQLITE_MAX_MMAP_SIZE=1099511627776 \
         # -DSQLITE_THREADSAFE=1 \
@@ -89,8 +91,8 @@ cp ${SCRIPT_DIR}/sqlite3_helpers.c ${SCRIPT_DIR}/sqlite-amalgamation/
 # 866873 libsqlite3-opt.wasm
 # 864174 libsqlite3.wasm
 # TODO: re-evaluate this usage
-${SCRIPT_DIR}/binaryen/bin/wasm-opt -g --strip --strip-producers -c -O3 \
-    ${SCRIPT_DIR}/libsqlite3.wasm -o ${SCRIPT_DIR}/libsqlite3-opt.wasm \
-	--enable-mutable-globals --enable-multivalue \
-	--enable-bulk-memory --enable-reference-types \
-	--enable-nontrapping-float-to-int --enable-sign-ext
+# ${SCRIPT_DIR}/binaryen/bin/wasm-opt -g --strip --strip-producers -c -O3 \
+#     ${SCRIPT_DIR}/libsqlite3.wasm -o ${SCRIPT_DIR}/libsqlite3-opt.wasm \
+# 	--enable-mutable-globals --enable-multivalue \
+# 	--enable-bulk-memory --enable-reference-types \
+# 	--enable-nontrapping-float-to-int --enable-sign-ext

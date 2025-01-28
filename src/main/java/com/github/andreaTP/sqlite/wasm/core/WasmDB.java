@@ -1,6 +1,7 @@
 package com.github.andreaTP.sqlite.wasm.core;
 
 import static com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports.SQLITE_SERIALIZE_NOCOPY;
+import static com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports.SQLITE_UTF8;
 
 import com.dylibso.chicory.runtime.HostFunction;
 import com.dylibso.chicory.runtime.ImportValues;
@@ -17,6 +18,7 @@ import com.github.andreaTP.sqlite.wasm.ProgressHandler;
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig;
 import com.github.andreaTP.sqlite.wasm.SQLiteModule;
 import com.github.andreaTP.sqlite.wasm.wasm.BusyHandlerStore;
+import com.github.andreaTP.sqlite.wasm.wasm.CollationStore;
 import com.github.andreaTP.sqlite.wasm.wasm.ProgressHandlerStore;
 import com.github.andreaTP.sqlite.wasm.wasm.UDFStore;
 import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
@@ -47,6 +49,8 @@ public class WasmDB extends DB {
     private int dbPtrPtr = 0;
 
     private int dbPtr = 0;
+
+    private CollationStore collationStore = new CollationStore();
 
     private ImportValues imports() {
         return ImportValues.builder()
@@ -107,6 +111,25 @@ public class WasmDB extends DB {
                                 List.of(ValueType.I32, ValueType.I32),
                                 List.of(ValueType.I32),
                                 (inst, args) -> xBusy(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xCompare",
+                                List.of(
+                                        ValueType.I32,
+                                        ValueType.I32,
+                                        ValueType.I32,
+                                        ValueType.I32,
+                                        ValueType.I32),
+                                List.of(ValueType.I32),
+                                (inst, args) -> xCompare(args)))
+                .addFunction(
+                        new HostFunction(
+                                "env",
+                                "xDestroyCollation",
+                                List.of(ValueType.I32),
+                                List.of(),
+                                (inst, args) -> xDestroyCollation(args)))
                 .build();
     }
 
@@ -284,6 +307,30 @@ public class WasmDB extends DB {
         return null;
     }
 
+    private long[] xCompare(long[] args) {
+        int ctx = (int) args[0];
+        int len1 = (int) args[1];
+        int str1Ptr = (int) args[2];
+        int len2 = (int) args[3];
+        int str2Ptr = (int) args[4];
+
+        Collation f = collationStore.get(ctx);
+
+        String str1 =
+                new String(instance.memory().readBytes(str1Ptr, len1), StandardCharsets.UTF_8);
+        String str2 =
+                new String(instance.memory().readBytes(str2Ptr, len2), StandardCharsets.UTF_8);
+
+        return new long[] {f.xCompare(str1, str2)};
+    }
+
+    private long[] xDestroyCollation(long[] args) {
+        int funIdx = (int) args[0];
+        // no tmp data to be cleaned up
+        // the collation will be freed with an explicit destroy call
+        return null;
+    }
+
     // safe access to the dbPointer
     private int dbPtr() throws SQLException {
         if (this.dbPtrPtr == 0 || this.dbPtr == 0) {
@@ -430,8 +477,7 @@ public class WasmDB extends DB {
 
     @Override
     public int enable_load_extension(boolean enable) throws SQLException {
-        // throw new RuntimeException("enable_load_extension not implemented in WasmDB");
-        // TODO: implement me skip for now
+        // TODO: extensions are not enabled in WASM/WASI
         return 0;
     }
 
@@ -709,12 +755,23 @@ public class WasmDB extends DB {
 
     @Override
     public int create_collation(String name, Collation c) throws SQLException {
-        throw new RuntimeException("create_collation not implemented in WasmDB");
+        int namePtr = exports.allocCString(name);
+        int userData = collationStore.registerCollation(name, c);
+
+        int result = exports.createCollation(dbPtr(), namePtr, SQLITE_UTF8, userData);
+        exports.free(namePtr);
+        return result;
     }
 
     @Override
     public int destroy_collation(String name) throws SQLException {
-        throw new RuntimeException("destroy_collation not implemented in WasmDB");
+        collationStore.free(name);
+
+        int namePtr = exports.allocCString(name);
+
+        int result = exports.destroyCollation(dbPtr(), namePtr);
+        exports.free(namePtr);
+        return result;
     }
 
     @Override
@@ -866,7 +923,7 @@ public class WasmDB extends DB {
         if (dbPtr == 0 || dbPtrPtr == 0) {
             return 0L;
         }
-        
+
         if (ProgressHandlerStore.isEmpty(dbPtr())) {
             return 0L;
         } else {
@@ -968,6 +1025,25 @@ public class WasmDB extends DB {
                                                             "xBusy",
                                                             List.of(ValueType.I32, ValueType.I32),
                                                             List.of(ValueType.I32),
+                                                            (inst, args) -> null))
+                                            .addFunction(
+                                                    new HostFunction(
+                                                            "env",
+                                                            "xCompare",
+                                                            List.of(
+                                                                    ValueType.I32,
+                                                                    ValueType.I32,
+                                                                    ValueType.I32,
+                                                                    ValueType.I32,
+                                                                    ValueType.I32),
+                                                            List.of(ValueType.I32),
+                                                            (inst, args) -> null))
+                                            .addFunction(
+                                                    new HostFunction(
+                                                            "env",
+                                                            "xDestroyCollation",
+                                                            List.of(ValueType.I32),
+                                                            List.of(),
                                                             (inst, args) -> null))
                                             .build())
                             .withStart(false)

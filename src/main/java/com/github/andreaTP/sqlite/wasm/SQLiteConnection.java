@@ -294,8 +294,7 @@ public abstract class SQLiteConnection implements Connection {
         // load the native DB
         DB db = null;
         try {
-            // TODO: those conditions are a bit weak ...
-            // TODO: hook up a proper query params/URI parser?
+            // TODO: this logic doesn't work as expected in Savepoint Test
             if (!fileName.isEmpty()
                     && (fileName.startsWith("file:")
                             && (fileName.contains("mode=memory") || fileName.contains(":memory:"))

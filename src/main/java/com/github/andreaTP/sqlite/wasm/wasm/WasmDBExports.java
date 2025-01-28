@@ -13,10 +13,10 @@ public class WasmDBExports {
     private static final int SQLITE_TRANSIENT = -1; // https://www.sqlite.org/c3ref/c_static.html
     public static final int SQLITE_SERIALIZE_NOCOPY = 0x001;
 
-    private static final int SQLITE_UTF8 = 1; /* IMP: R-37514-35566 */
+    public static final int SQLITE_UTF8 = 1; /* IMP: R-37514-35566 */
     private static final int SQLITE_UTF16LE = 2; /* IMP: R-03371-37637 */
     private static final int SQLITE_UTF16BE = 3; /* IMP: R-51971-34154 */
-    private static final int SQLITE_UTF16 = 4; /* Use native byte order */
+    public static final int SQLITE_UTF16 = 4; /* Use native byte order */
     private static final int SQLITE_ANY = 5; /* Deprecated */
     private static final int SQLITE_UTF16_ALIGNED = 8; /* sqlite3_create_collation only */
 
@@ -76,6 +76,7 @@ public class WasmDBExports {
     private final ExportFunction busyHandler;
     private final ExportFunction serialize;
     private final ExportFunction deserialize;
+    private final ExportFunction createCollation;
 
     private final int xFuncPtr;
     private final int xStepPtr;
@@ -85,6 +86,8 @@ public class WasmDBExports {
     private final int xDestroyPtr;
     private final int xProgressPtr;
     private final int xBusyPtr;
+    private final int xCompare;
+    private final int xDestroyCollation;
 
     public WasmDBExports(Instance instance) {
         this.instance = instance;
@@ -97,6 +100,9 @@ public class WasmDBExports {
         this.xDestroyPtr = (int) instance.exports().function("xDestroyPtr").apply()[0];
         this.xProgressPtr = (int) instance.exports().function("xProgressPtr").apply()[0];
         this.xBusyPtr = (int) instance.exports().function("xBusyPtr").apply()[0];
+        this.xCompare = (int) instance.exports().function("xComparePtr").apply()[0];
+        this.xDestroyCollation =
+                (int) instance.exports().function("xDestroyCollationPtr").apply()[0];
 
         this.realloc = instance.exports().function("realloc");
         this.malloc = instance.exports().function("malloc");
@@ -152,6 +158,7 @@ public class WasmDBExports {
         this.valueBytes = instance.exports().function("sqlite3_value_bytes");
         this.serialize = instance.exports().function("sqlite3_serialize");
         this.deserialize = instance.exports().function("sqlite3_deserialize");
+        this.createCollation = instance.exports().function("sqlite3_create_collation_v2");
 
         this.progressHandler = instance.exports().function("sqlite3_progress_handler");
         this.busyHandler = instance.exports().function("sqlite3_busy_handler");
@@ -517,5 +524,21 @@ public class WasmDBExports {
         return (int)
                 deserialize
                         .apply(dbPtr, schemaPtr, buffPtr, size, size, deserializeDefaultFlags)[0];
+    }
+
+    //    sqlite3*,
+    //    const char *zName,
+    //    int eTextRep,
+    //    void *pArg,
+    //    int(*xCompare)(void*,int,const void*,int,const void*),
+    //    void(*xDestroy)(void*)
+    public int createCollation(int dbPtr, int zNamePtr, int eTextPtr, int userData) {
+        return (int)
+                createCollation
+                        .apply(dbPtr, zNamePtr, eTextPtr, userData, xCompare, xDestroyCollation)[0];
+    }
+
+    public int destroyCollation(int dbPtr, int zNamePtr) {
+        return (int) createCollation.apply(dbPtr, zNamePtr, 0, 0, 0, 0)[0];
     }
 }

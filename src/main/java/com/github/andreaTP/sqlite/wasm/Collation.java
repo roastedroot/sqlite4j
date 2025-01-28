@@ -90,5 +90,5 @@ public abstract class Collation {
      * @return an integer that is negative, zero, or positive if the first string is less than,
      *     equal to, or greater than the second, respectively
      */
-    protected abstract int xCompare(String str1, String str2);
+    public abstract int xCompare(String str1, String str2);
 }

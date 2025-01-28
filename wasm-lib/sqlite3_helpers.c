@@ -84,3 +84,23 @@ __attribute__((
 extern void* xBusyPtr() {
     return &xBusy;
 }
+
+extern int xCompare(void* context, int len1, const void* str1, int len2, const void* str2)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xCompare"),
+));
+
+extern void* xComparePtr() {
+    return &xCompare;
+}
+
+extern void xDestroyCollation(void *userData)
+__attribute__((
+    __import_module__("env"),
+    __import_name__("xDestroyCollation"),
+));
+
+extern void* xDestroyCollationPtr() {
+    return &xDestroyCollation;
+}
