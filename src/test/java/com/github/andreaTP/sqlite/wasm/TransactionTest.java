@@ -2,6 +2,7 @@ package com.github.andreaTP.sqlite.wasm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.andreaTP.sqlite.wasm.SQLiteConfig.TransactionMode;
 import java.io.File;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.io.TempDir;
  * same db.
  */
 public class TransactionTest {
+    private static File tmpFile;
+
     private Connection conn1, conn2, conn3;
     private Statement stat1, stat2, stat3;
 
@@ -27,7 +30,7 @@ public class TransactionTest {
 
     @BeforeEach
     public void connect(@TempDir File tempDir) throws Exception {
-        File tmpFile = File.createTempFile("test-trans", ".db", tempDir);
+        tmpFile = File.createTempFile("test-trans", ".db", tempDir);
 
         Properties prop = new Properties();
         prop.setProperty("shared_cache", "false");
@@ -59,14 +62,19 @@ public class TransactionTest {
         conn1.setAutoCommit(false);
         stat1.execute("insert into test values (2);");
 
-        final PreparedStatement pstat2 =
-                prepared ? conn2.prepareStatement("insert into test values (3);") : null;
+        //        final PreparedStatement pstat2 =
+        //                prepared ? conn2.prepareStatement("insert into test values (3);") : null;
 
         // Second transaction starts and tries to complete but fails because first is still running
         boolean gotException = false;
         try {
             ((SQLiteConnection) conn2).setBusyTimeout(10);
             conn2.setAutoCommit(false);
+
+            // moved after setting the busy timeout to work in WASM
+            final PreparedStatement pstat2 =
+                    prepared ? conn2.prepareStatement("insert into test values (3);") : null;
+
             if (pstat2 != null) {
                 // The prepared case would fail regardless of whether this was "execute" or
                 // "executeUpdate"
@@ -94,6 +102,9 @@ public class TransactionTest {
 
         // Second transaction retries
         conn2.setAutoCommit(false);
+
+        final PreparedStatement pstat2 =
+                prepared ? conn2.prepareStatement("insert into test values (3);") : null;
         if (pstat2 != null) {
             pstat2.execute();
         } else {
@@ -142,6 +153,10 @@ public class TransactionTest {
     public void locking() throws SQLException {
         stat1.executeUpdate("create table test (c1);");
         stat1.executeUpdate("begin immediate;");
+        // here the database is correctly locked in WASM
+        assertThatThrownBy(() -> stat2.executeUpdate("select * from test;"));
+        // after the commit everything is accessible again in WASM
+        stat1.executeUpdate("commit;");
         stat2.executeUpdate("select * from test;");
     }
 
@@ -160,10 +175,11 @@ public class TransactionTest {
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(1);
         rs.close();
-        rs = stat2.executeQuery(countSql);
-        assertThat(rs.next()).isTrue();
-        assertThat(rs.getInt(1)).isEqualTo(0);
-        rs.close();
+        // Multiple connections are not allowed: SQLITE_THREADSAFE=0
+        //        rs = stat2.executeQuery(countSql);
+        //        assertThat(rs.next()).isTrue();
+        //        assertThat(rs.getInt(1)).isEqualTo(0);
+        //        rs.close();
 
         conn1.commit();
 
@@ -226,6 +242,8 @@ public class TransactionTest {
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(1 + 2 + 3 + 4 + 5 + 6 + 7);
         rs.close();
+        // With WASM concurrent access is forbidden
+        stat1.execute("rollback;");
         rs = stat2.executeQuery("select sum(c1) from t;");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(1 + 2 + 3 + 4 + 5);
