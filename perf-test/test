@@ -1,6 +1,10 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 
-//DEPS com.github.andreaTP.sqlite.wasm:sqlite-jdbc-wasm:999-SNAPSHOT
+// from Jitpack
+//REPOS mavencentral,jitpack
+//DEPS com.github.andreaTP:sqlite-jdbc-wasm:main-SNAPSHOT
+
+// // DEPS com.github.andreaTP.sqlite.wasm:sqlite-jdbc-wasm:999-SNAPSHOT
 
 import static java.lang.System.*;
 
