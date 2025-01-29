@@ -126,14 +126,8 @@ public class BusyHandlerTest {
                     new BusyHandler() {
                         @Override
                         public int callback(int nbPrevInvok) {
+                            // TODO: WASM different results
                             // assertThat(calls[0]).isEqualTo(nbPrevInvok);
-                            System.out.println(
-                                    "Thread: "
-                                            + threadNum
-                                            + " ,calls: "
-                                            + calls[0]
-                                            + " ,prev: "
-                                            + nbPrevInvok);
                             calls[0]++;
 
                             if (nbPrevInvok <= 1) {

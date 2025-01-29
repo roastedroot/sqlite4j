@@ -36,6 +36,7 @@ public abstract class SQLiteConnection implements Connection {
     private boolean firstStatementExecuted = false;
 
     // One single filesystem for all connections
+    // is always needed for backup and restores ...
     private static final FileSystem fs =
             Jimfs.newFileSystem(Configuration.unix().toBuilder().setAttributeViews("unix").build());
 

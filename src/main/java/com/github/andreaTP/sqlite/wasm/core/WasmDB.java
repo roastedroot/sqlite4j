@@ -173,17 +173,7 @@ public class WasmDB extends DB {
         super(url, fileName, config);
         this.fs = fs;
 
-        // TODO: move this logic to another place
-        // TODO: separate the concerns around the FileSystem when things are more stabilized
         Path target = fs.getPath("/");
-        try {
-            if (!java.nio.file.Files.exists(target)) {
-                java.nio.file.Files.createDirectory(target);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create directory on the in-memory fs", e);
-        }
-
         WasiOptions wasiOpts =
                 WasiOptions.builder()
                         .inheritSystem()

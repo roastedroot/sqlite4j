@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -238,8 +239,8 @@ public class ConnectionTest {
         return tmp;
     }
 
-    // TODO: shared cache not working?
     @Test
+    @Disabled("WASM: Shared cache is disabled and the usage is discouraged")
     public void URIFilenames() throws SQLException {
         Connection conn1 =
                 DriverManager.getConnection("jdbc:sqlite:file:memdb1?mode=memory&cache=shared");
