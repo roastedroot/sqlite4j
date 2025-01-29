@@ -1,4 +1,4 @@
-package com.github.andreaTP.sqlite.wasm.wasm;
+package com.github.andreaTP.sqlite.wasm.core.wasm;
 
 import com.github.andreaTP.sqlite.wasm.BusyHandler;
 import java.util.HashMap;

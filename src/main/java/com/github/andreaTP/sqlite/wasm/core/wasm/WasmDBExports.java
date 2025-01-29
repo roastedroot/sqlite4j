@@ -1,4 +1,4 @@
-package com.github.andreaTP.sqlite.wasm.wasm;
+package com.github.andreaTP.sqlite.wasm.core.wasm;
 
 import static com.github.andreaTP.sqlite.wasm.core.Codes.SQLITE_NULL;
 
@@ -62,13 +62,17 @@ public class WasmDBExports {
     private final ExportFunction createFunctionAggregate;
     private final ExportFunction userData;
     private final ExportFunction resultText;
+    private final ExportFunction resultNull;
     private final ExportFunction resultLong;
     private final ExportFunction resultInt;
     private final ExportFunction resultDouble;
     private final ExportFunction resultBlob;
+    private final ExportFunction resultError;
+    private final ExportFunction resultErrorNomem;
     private final ExportFunction valueDouble;
     private final ExportFunction valueText;
     private final ExportFunction valueInt;
+    private final ExportFunction valueType;
     private final ExportFunction valueBlob;
     private final ExportFunction valueBytes;
     private final ExportFunction valueLong;
@@ -86,7 +90,7 @@ public class WasmDBExports {
     private final ExportFunction backupRemaining;
     private final ExportFunction backupPageCount;
     private final ExportFunction sleep;
-    private final ExportFunction sharedCache;
+    private final ExportFunction interrupt;
 
     private final int xFuncPtr;
     private final int xStepPtr;
@@ -162,13 +166,17 @@ public class WasmDBExports {
                 instance.exports().function("sqlite3_create_window_function");
         this.userData = instance.exports().function("sqlite3_user_data");
         this.resultText = instance.exports().function("sqlite3_result_text");
+        this.resultNull = instance.exports().function("sqlite3_result_null");
         this.resultLong = instance.exports().function("sqlite3_result_int64");
         this.resultInt = instance.exports().function("sqlite3_result_int");
         this.resultDouble = instance.exports().function("sqlite3_result_double");
         this.resultBlob = instance.exports().function("sqlite3_result_blob");
+        this.resultError = instance.exports().function("sqlite3_result_error");
+        this.resultErrorNomem = instance.exports().function("sqlite3_result_error_nomem");
         this.valueDouble = instance.exports().function("sqlite3_value_double");
         this.valueText = instance.exports().function("sqlite3_value_text");
         this.valueInt = instance.exports().function("sqlite3_value_int");
+        this.valueType = instance.exports().function("sqlite3_value_type");
         this.valueLong = instance.exports().function("sqlite3_value_int64");
         this.valueBlob = instance.exports().function("sqlite3_value_blob");
         this.valueBytes = instance.exports().function("sqlite3_value_bytes");
@@ -181,8 +189,7 @@ public class WasmDBExports {
         this.backupRemaining = instance.exports().function("sqlite3_backup_remaining");
         this.backupPageCount = instance.exports().function("sqlite3_backup_pagecount");
         this.sleep = instance.exports().function("sqlite3_sleep");
-        this.sharedCache = null;
-        // instance.exports().function("sqlite3_enable_shared_cache");
+        this.interrupt = instance.exports().function("sqlite3_interrupt");
 
         this.progressHandler = instance.exports().function("sqlite3_progress_handler");
         this.busyHandler = instance.exports().function("sqlite3_busy_handler");
@@ -482,6 +489,10 @@ public class WasmDBExports {
         resultText.apply(context, bytesPtr, bytesLength, SQLITE_TRANSIENT);
     }
 
+    public void resultNull(int context) {
+        resultNull.apply(context);
+    }
+
     public void resultInt(int context, int value) {
         resultInt.apply(context, value);
     }
@@ -498,6 +509,14 @@ public class WasmDBExports {
         resultBlob.apply(context, bytesPtr, bytesLength, SQLITE_TRANSIENT);
     }
 
+    public void resultError(int context, int bytesPtr, int bytesLength) {
+        resultError.apply(context, bytesPtr, bytesLength);
+    }
+
+    public void resultErrorNomem(int context) {
+        resultErrorNomem.apply(context);
+    }
+
     public double valueDouble(int valuePtr) {
         return Value.longToDouble(valueDouble.apply(valuePtr)[0]);
     }
@@ -508,6 +527,10 @@ public class WasmDBExports {
 
     public int valueInt(int valuePtr) {
         return (int) valueInt.apply(valuePtr)[0];
+    }
+
+    public int valueType(int valuePtr) {
+        return (int) valueType.apply(valuePtr)[0];
     }
 
     public long valueLong(int valuePtr) {
@@ -623,8 +646,7 @@ public class WasmDBExports {
         sleep.apply(ms);
     }
 
-    public int sharedCache(boolean enable) {
-        // return (int) sharedCache.apply((enable) ? 1 : 0)[0];
-        return 0;
+    public void interrupt(int dbPtr) {
+        interrupt.apply(dbPtr);
     }
 }

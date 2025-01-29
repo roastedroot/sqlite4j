@@ -1,7 +1,9 @@
-package com.github.andreaTP.sqlite.wasm.wasm;
+package com.github.andreaTP.sqlite.wasm.core.wasm;
 
 import com.github.andreaTP.sqlite.wasm.Function;
 import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UDFStore {
     // we need to avoid returning 0 to disambiguate with NULL
@@ -10,6 +12,7 @@ public class UDFStore {
     private static int count;
     private static ArrayDeque<Integer> emptySlots = new ArrayDeque<>();
     private static Function[] store = new Function[MIN_CAPACITY];
+    private static Map<String, Integer> names = new HashMap<>();
 
     private static void increaseCapacity() {
         final int newCapacity = store.length << 1;
@@ -20,7 +23,7 @@ public class UDFStore {
         store = array;
     }
 
-    public static int registerFunction(Function f) {
+    public static int registerFunction(String name, Function f) {
         int result;
         if (emptySlots.isEmpty()) {
             store[count] = f;
@@ -38,7 +41,15 @@ public class UDFStore {
             store[emptySlot] = f;
             result = emptySlot;
         }
+        names.put(name, result);
         return result + OFFSET;
+    }
+
+    public static void free(String name) {
+        if (names.containsKey(name)) {
+            free(names.get(name) + OFFSET);
+            names.remove(name);
+        }
     }
 
     public static void free(int idx) {

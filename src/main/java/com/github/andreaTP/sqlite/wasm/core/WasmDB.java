@@ -1,9 +1,8 @@
 package com.github.andreaTP.sqlite.wasm.core;
 
-import static com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports.SQLITE_SERIALIZE_NOCOPY;
-import static com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports.SQLITE_UTF8;
+import static com.github.andreaTP.sqlite.wasm.core.wasm.WasmDBExports.SQLITE_SERIALIZE_NOCOPY;
+import static com.github.andreaTP.sqlite.wasm.core.wasm.WasmDBExports.SQLITE_UTF8;
 
-import com.dylibso.chicory.runtime.HostFunction;
 import com.dylibso.chicory.runtime.ImportValues;
 import com.dylibso.chicory.runtime.Instance;
 import com.dylibso.chicory.runtime.Memory;
@@ -11,7 +10,6 @@ import com.dylibso.chicory.wasi.WasiOptions;
 import com.dylibso.chicory.wasi.WasiPreview1;
 import com.dylibso.chicory.wasm.WasmModule;
 import com.dylibso.chicory.wasm.types.MemoryLimits;
-import com.dylibso.chicory.wasm.types.ValueType;
 import com.github.andreaTP.sqlite.wasm.BusyHandler;
 import com.github.andreaTP.sqlite.wasm.Collation;
 import com.github.andreaTP.sqlite.wasm.Function;
@@ -21,11 +19,14 @@ import com.github.andreaTP.sqlite.wasm.SQLiteErrorCode;
 import com.github.andreaTP.sqlite.wasm.SQLiteException;
 import com.github.andreaTP.sqlite.wasm.SQLiteModule;
 import com.github.andreaTP.sqlite.wasm.SQLiteUpdateListener;
-import com.github.andreaTP.sqlite.wasm.wasm.BusyHandlerStore;
-import com.github.andreaTP.sqlite.wasm.wasm.CollationStore;
-import com.github.andreaTP.sqlite.wasm.wasm.ProgressHandlerStore;
-import com.github.andreaTP.sqlite.wasm.wasm.UDFStore;
-import com.github.andreaTP.sqlite.wasm.wasm.WasmDBExports;
+import com.github.andreaTP.sqlite.wasm.Version;
+import com.github.andreaTP.sqlite.wasm.core.wasm.BusyHandlerStore;
+import com.github.andreaTP.sqlite.wasm.core.wasm.CollationStore;
+import com.github.andreaTP.sqlite.wasm.core.wasm.DummyWasmDBImports;
+import com.github.andreaTP.sqlite.wasm.core.wasm.ProgressHandlerStore;
+import com.github.andreaTP.sqlite.wasm.core.wasm.UDFStore;
+import com.github.andreaTP.sqlite.wasm.core.wasm.WasmDBExports;
+import com.github.andreaTP.sqlite.wasm.core.wasm.WasmDBImports;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,22 +37,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
-import java.util.List;
 
-public class WasmDB extends DB {
+public class WasmDB extends DB implements WasmDBImports {
     public static final int PTR_SIZE = 4;
-
     private static final WasmModule MODULE = SQLiteModule.load();
-    // DEBUG
-    //     private static final WasmModule MODULE =
-    //            Parser.parse(new
-    //                    File("/home/aperuffo/workspace/sqlite-jdbc/wasm-lib/libsqlite3.wasm"));
 
     private final Instance instance;
     private final WasiPreview1 wasiPreview1;
-    private final WasmDBExports exports;
-
-    // TODO: double-check proper cleanup of resources
+    private final WasmDBExports lib;
     private final FileSystem fs;
 
     /** SQLite connection handle. */
@@ -59,114 +52,8 @@ public class WasmDB extends DB {
 
     private int dbPtr = 0;
 
+    // Collations are dedicated per connection
     private CollationStore collationStore = new CollationStore();
-
-    private ImportValues imports() {
-        return ImportValues.builder()
-                .addFunction(wasiPreview1.toHostFunctions())
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xFunc",
-                                List.of(ValueType.I32, ValueType.I32, ValueType.I32),
-                                List.of(),
-                                (inst, args) -> xFunc(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xStep",
-                                List.of(ValueType.I32, ValueType.I32, ValueType.I32),
-                                List.of(),
-                                (inst, args) -> xStep(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xFinal",
-                                List.of(ValueType.I32),
-                                List.of(),
-                                (inst, args) -> xFinal(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xValue",
-                                List.of(ValueType.I32),
-                                List.of(),
-                                (inst, args) -> xValue(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xInverse",
-                                List.of(ValueType.I32, ValueType.I32, ValueType.I32),
-                                List.of(),
-                                (inst, args) -> xInverse(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xDestroy",
-                                List.of(ValueType.I32),
-                                List.of(),
-                                (inst, args) -> xDestroy(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xProgress",
-                                List.of(ValueType.I32),
-                                List.of(ValueType.I32),
-                                (inst, args) -> xProgress(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xBusy",
-                                List.of(ValueType.I32, ValueType.I32),
-                                List.of(ValueType.I32),
-                                (inst, args) -> xBusy(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xCompare",
-                                List.of(
-                                        ValueType.I32,
-                                        ValueType.I32,
-                                        ValueType.I32,
-                                        ValueType.I32,
-                                        ValueType.I32),
-                                List.of(ValueType.I32),
-                                (inst, args) -> xCompare(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xDestroyCollation",
-                                List.of(ValueType.I32),
-                                List.of(),
-                                (inst, args) -> xDestroyCollation(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xUpdate",
-                                List.of(
-                                        ValueType.I32,
-                                        ValueType.I32,
-                                        ValueType.I32,
-                                        ValueType.I32,
-                                        ValueType.I64),
-                                List.of(),
-                                (inst, args) -> xUpdate(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xCommit",
-                                List.of(ValueType.I32),
-                                List.of(ValueType.I32),
-                                (inst, args) -> xCommit(args)))
-                .addFunction(
-                        new HostFunction(
-                                "env",
-                                "xRollback",
-                                List.of(ValueType.I32),
-                                List.of(),
-                                (inst, args) -> xRollback(args)))
-                .build();
-    }
 
     public WasmDB(FileSystem fs, String url, String fileName, SQLiteConfig config)
             throws SQLException {
@@ -184,7 +71,11 @@ public class WasmDB extends DB {
         instance =
                 Instance.builder(MODULE)
                         .withMachineFactory(SQLiteModule::create)
-                        .withImportValues(imports())
+                        .withImportValues(
+                                ImportValues.builder()
+                                        .addFunction(wasiPreview1.toHostFunctions())
+                                        .addFunction(toHostFunctions())
+                                        .build())
                         // compile time option: -Wl,--initial-memory=327680
                         // means 5 pages initial memory
                         // increased with 3 more zeroes and now the test is passing
@@ -192,58 +83,52 @@ public class WasmDB extends DB {
                         // TODO: find as tradeoff between QueryTest.github720 and JDBCTest.hammer
                         .withMemoryLimits(new MemoryLimits(500, Memory.RUNTIME_MAX_PAGES))
                         .build();
-        exports = new WasmDBExports(instance);
+        lib = new WasmDBExports(instance);
     }
 
     // TODO: find a better way for doing this
-    // throw a wrapper exception and unwrap it in the "safeRun"
+    // throw a wrapper exception and unwrap it in the "safeRun" of the statement, maybe in the
+    // future
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
     }
 
     // https://www.sqlite.org/c3ref/progress_handler.html
     // only 1 progress handler at the time
-    // TODO: do we need the Store at all?
-    private long[] xProgress(long[] args) {
-        int userData = (int) args[0];
-
+    @Override
+    public int xProgress(int userData) {
         ProgressHandler f = ProgressHandlerStore.get(userData);
 
         try {
             int result = f.progress();
-            return new long[] {result};
+            return result;
         } catch (SQLException e) {
             sneakyThrow(e);
         }
-        return null;
+        return SQLITE_ERROR;
     }
 
-    private long[] xBusy(long[] args) {
-        int userData = (int) args[0];
-        int nbPrevInvok = (int) args[1];
-
+    @Override
+    public int xBusy(int userData, int nbPrevInvok) {
         BusyHandler f = BusyHandlerStore.get(userData);
 
         try {
             int result = f.callback(nbPrevInvok);
-            return new long[] {result};
+            return result;
         } catch (SQLException e) {
             sneakyThrow(e);
         }
-        return null;
+        return SQLITE_ERROR;
     }
 
-    private long[] xDestroy(long[] args) {
-        int funIdx = (int) args[0];
-
+    @Override
+    public void xDestroy(int funIdx) {
         UDFStore.free(funIdx);
-        return null;
     }
 
-    private long[] xFinal(long[] args) {
-        int ctx = (int) args[0];
-
-        int funIdx = exports.userData(ctx);
+    @Override
+    public void xFinal(int ctx) {
+        int funIdx = lib.userData(ctx);
         Function f = UDFStore.get(funIdx);
 
         f.setContext(ctx);
@@ -253,13 +138,11 @@ public class WasmDB extends DB {
         } catch (SQLException e) {
             sneakyThrow(e);
         }
-        return null;
     }
 
-    private long[] xValue(long[] args) {
-        int ctx = (int) args[0];
-
-        int funIdx = exports.userData(ctx);
+    @Override
+    public void xValue(int ctx) {
+        int funIdx = lib.userData(ctx);
         Function f = UDFStore.get(funIdx);
 
         f.setContext(ctx);
@@ -269,18 +152,13 @@ public class WasmDB extends DB {
         } catch (SQLException e) {
             sneakyThrow(e);
         }
-        return null;
     }
 
-    private long[] xFunc(long[] args) {
-        int ctx = (int) args[0];
-        int argN = (int) args[1];
-        int value = (int) args[2];
-
-        int funIdx = exports.userData(ctx);
+    @Override
+    public void xFunc(int ctx, int argN, int value) {
+        int funIdx = lib.userData(ctx);
         Function f = UDFStore.get(funIdx);
 
-        // TODO: verify if all of this is needed ...
         f.setContext(ctx);
         f.setValue(value);
         f.setArgs(argN);
@@ -290,18 +168,13 @@ public class WasmDB extends DB {
         } catch (SQLException e) {
             sneakyThrow(e);
         }
-        return null;
     }
 
-    private long[] xStep(long[] args) {
-        int ctx = (int) args[0];
-        int argN = (int) args[1];
-        int value = (int) args[2];
-
-        int funIdx = exports.userData(ctx);
+    @Override
+    public void xStep(int ctx, int argN, int value) {
+        int funIdx = lib.userData(ctx);
         Function f = UDFStore.get(funIdx);
 
-        // TODO: verify if all of this is needed ...
         f.setContext(ctx);
         f.setValue(value);
         f.setArgs(argN);
@@ -311,18 +184,13 @@ public class WasmDB extends DB {
         } catch (SQLException e) {
             sneakyThrow(e);
         }
-        return null;
     }
 
-    private long[] xInverse(long[] args) {
-        int ctx = (int) args[0];
-        int argN = (int) args[1];
-        int value = (int) args[2];
-
-        int funIdx = exports.userData(ctx);
+    @Override
+    public void xInverse(int ctx, int argN, int value) {
+        int funIdx = lib.userData(ctx);
         Function f = UDFStore.get(funIdx);
 
-        // TODO: verify if all of this is needed ...
         f.setContext(ctx);
         f.setValue(value);
         f.setArgs(argN);
@@ -332,16 +200,10 @@ public class WasmDB extends DB {
         } catch (SQLException e) {
             sneakyThrow(e);
         }
-        return null;
     }
 
-    private long[] xCompare(long[] args) {
-        int ctx = (int) args[0];
-        int len1 = (int) args[1];
-        int str1Ptr = (int) args[2];
-        int len2 = (int) args[3];
-        int str2Ptr = (int) args[4];
-
+    @Override
+    public int xCompare(int ctx, int len1, int str1Ptr, int len2, int str2Ptr) {
         Collation f = collationStore.get(ctx);
 
         String str1 =
@@ -349,21 +211,20 @@ public class WasmDB extends DB {
         String str2 =
                 new String(instance.memory().readBytes(str2Ptr, len2), StandardCharsets.UTF_8);
 
-        return new long[] {f.xCompare(str1, str2)};
+        return f.xCompare(str1, str2);
     }
 
-    private long[] xDestroyCollation(long[] args) {
-        int funIdx = (int) args[0];
+    @Override
+    public void xDestroyCollation(int funIdx) {
         // no tmp data to be cleaned up
         // the collation will be freed with an explicit destroy call
-        return null;
     }
 
     private static final int SQLITE_INSERT = 18;
     private static final int SQLITE_DELETE = 9;
     private static final int SQLITE_UPDATE = 23;
 
-    private SQLiteUpdateListener.Type getUpdateType(int updateType) {
+    private static SQLiteUpdateListener.Type getUpdateType(int updateType) {
         switch (updateType) {
             case SQLITE_INSERT:
                 return SQLiteUpdateListener.Type.INSERT;
@@ -377,12 +238,9 @@ public class WasmDB extends DB {
         }
     }
 
-    private long[] xUpdate(long[] args) {
-        int userData = (int) args[0]; // Unused
-        SQLiteUpdateListener.Type type = getUpdateType((int) args[1]);
-        int dbNamePtr = (int) args[2];
-        int tablePtr = (int) args[3];
-        long rowId = args[4];
+    @Override
+    public void xUpdate(int userData, int tpe, int dbNamePtr, int tablePtr, long rowId) {
+        SQLiteUpdateListener.Type type = getUpdateType(tpe);
 
         String dbName = instance.memory().readCString(dbNamePtr);
         String tableName = instance.memory().readCString(tablePtr);
@@ -390,24 +248,22 @@ public class WasmDB extends DB {
         this.updateListeners.forEach(ul -> ul.onUpdate(type, dbName, tableName, rowId));
 
         // TODO: doublecheck if we do a double free
-        exports.free(dbNamePtr);
-        exports.free(tablePtr);
+        lib.free(dbNamePtr);
+        lib.free(tablePtr);
 
         // no tmp data to be cleaned up
         // the collation will be freed with an explicit destroy call
-        return null;
     }
 
-    private long[] xCommit(long[] args) {
+    @Override
+    public int xCommit(int userData) {
         commitListeners.forEach(cl -> cl.onCommit());
-
-        return new long[] {0};
+        return 0;
     }
 
-    private long[] xRollback(long[] args) {
+    @Override
+    public void xRollback(int userData) {
         commitListeners.forEach(cl -> cl.onRollback());
-
-        return null;
     }
 
     // safe access to the dbPointer
@@ -455,14 +311,14 @@ public class WasmDB extends DB {
             }
         }
 
-        this.dbPtrPtr = exports.malloc(PTR_SIZE);
-        int dbNamePtr = exports.allocCString(filename);
+        this.dbPtrPtr = lib.malloc(PTR_SIZE);
+        int dbNamePtr = lib.allocCString(filename);
 
-        int res = exports.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
+        int res = lib.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
         this.dbPtr = instance.memory().readInt(this.dbPtrPtr);
         if (res != SQLITE_OK) {
-            int errCode = exports.extendedErrorcode(dbPtr());
-            exports.close(dbPtr());
+            int errCode = lib.extendedErrorcode(dbPtr());
+            lib.close(dbPtr());
             throw DB.newSQLException(errCode, errmsg());
         }
         // exports.free(dbNamePtr);
@@ -470,13 +326,13 @@ public class WasmDB extends DB {
 
     @Override
     protected SafeStmtPtr prepare(String sql) throws SQLException {
-        int stmtPtrPtr = exports.malloc(PTR_SIZE);
-        WasmDBExports.StringPtrSize str = exports.allocString(sql);
+        int stmtPtrPtr = lib.malloc(PTR_SIZE);
+        WasmDBExports.StringPtrSize str = lib.allocString(sql);
 
-        int res = exports.prepareV2(dbPtr(), str.ptr(), str.size(), stmtPtrPtr, 0);
-        exports.free(str.ptr());
+        int res = lib.prepareV2(dbPtr(), str.ptr(), str.size(), stmtPtrPtr, 0);
+        lib.free(str.ptr());
         if (res != SQLITE_OK) {
-            int errCode = exports.extendedErrorcode(dbPtr());
+            int errCode = lib.extendedErrorcode(dbPtr());
             // exports.close(dbPtr());
             throw DB.newSQLException(errCode, errmsg());
         }
@@ -486,27 +342,27 @@ public class WasmDB extends DB {
 
     @Override
     protected int finalize(long stmtPtrPtr) throws SQLException {
-        int result = exports.finalize(exports.ptr((int) stmtPtrPtr));
+        int result = lib.finalize(lib.ptr((int) stmtPtrPtr));
         return result;
     }
 
     @Override
     public int step(long stmtPtrPtr) throws SQLException {
-        int result = exports.step(exports.ptr((int) stmtPtrPtr));
+        int result = lib.step(lib.ptr((int) stmtPtrPtr));
         if (result != SQLITE_OK) {
-            return exports.extendedErrorcode(dbPtr());
+            return lib.extendedErrorcode(dbPtr());
         }
         return result;
     }
 
     @Override
     public int _exec(String sql) throws SQLException {
-        int sqlBytesPtr = exports.allocCString(sql);
+        int sqlBytesPtr = lib.allocCString(sql);
 
-        int status = exports.exec(dbPtr(), sqlBytesPtr, 0, 0, 0);
-        exports.free(sqlBytesPtr);
+        int status = lib.exec(dbPtr(), sqlBytesPtr, 0, 0, 0);
+        lib.free(sqlBytesPtr);
         if (status != SQLITE_OK) {
-            int errCode = exports.extendedErrorcode(dbPtr());
+            int errCode = lib.extendedErrorcode(dbPtr());
             throw DB.newSQLException(errCode, errmsg());
         }
 
@@ -515,46 +371,49 @@ public class WasmDB extends DB {
 
     @Override
     public long changes() throws SQLException {
-        return exports.changes(dbPtr());
+        return lib.changes(dbPtr());
     }
 
     @Override
     public void interrupt() throws SQLException {
-        throw new RuntimeException("interrupt not implemented in WasmDB");
+        lib.interrupt(dbPtr());
     }
 
     @Override
     public void busy_timeout(int ms) throws SQLException {
-        exports.busyTimeout(dbPtr(), ms);
+        lib.busyTimeout(dbPtr(), ms);
     }
 
     @Override
     public void busy_handler(BusyHandler busyHandler) throws SQLException {
         int dbPtr = dbPtr();
         int busyHandlerPtr = BusyHandlerStore.registerBusyHandler(dbPtr, busyHandler);
-        exports.busyHandler(dbPtr, busyHandlerPtr);
+        lib.busyHandler(dbPtr, busyHandlerPtr);
     }
 
     @Override
     String errmsg() throws SQLException {
-        int errPtr = exports.errmsg(dbPtr());
+        int errPtr = lib.errmsg(dbPtr());
         String err = instance.memory().readCString(errPtr);
         return err;
     }
 
     @Override
     public String libversion() throws SQLException {
-        throw new RuntimeException("libversion not implemented in WasmDB");
+        return Version.libVersion();
     }
 
     @Override
     public long total_changes() throws SQLException {
-        return exports.totalChanges(dbPtr());
+        return lib.totalChanges(dbPtr());
     }
 
     @Override
     public int shared_cache(boolean enable) throws SQLException {
-        return exports.sharedCache(enable);
+        if (enable) {
+            throw new SQLException("Shared cache is disabled in the WASM build");
+        }
+        return 0;
     }
 
     @Override
@@ -574,12 +433,12 @@ public class WasmDB extends DB {
             updateListeners.clear();
             commitListeners.clear();
 
-            int res = exports.close(dbPtr);
+            int res = lib.close(dbPtr);
             if (res != SQLITE_OK) {
                 throw DB.newSQLException(res, errmsg());
             }
 
-            exports.free(dbPtrPtr);
+            lib.free(dbPtrPtr);
 
             // The handlers tests are failing when resetting those pointers
             // TODO: investigate the reason!
@@ -593,32 +452,32 @@ public class WasmDB extends DB {
 
     @Override
     public int reset(long stmtPtrPtr) throws SQLException {
-        return exports.reset(exports.ptr((int) stmtPtrPtr));
+        return lib.reset(lib.ptr((int) stmtPtrPtr));
     }
 
     @Override
     public int clear_bindings(long stmtPtrPtr) throws SQLException {
-        return exports.clearBindings(exports.ptr((int) stmtPtrPtr));
+        return lib.clearBindings(lib.ptr((int) stmtPtrPtr));
     }
 
     @Override
     int bind_parameter_count(long stmtPtrPtr) throws SQLException {
-        return exports.bindParameterCount(exports.ptr((int) stmtPtrPtr));
+        return lib.bindParameterCount(lib.ptr((int) stmtPtrPtr));
     }
 
     @Override
     public int column_count(long stmtPtrPtr) throws SQLException {
-        return exports.columnCount(exports.ptr((int) stmtPtrPtr));
+        return lib.columnCount(lib.ptr((int) stmtPtrPtr));
     }
 
     @Override
     public int column_type(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnType(exports.ptr((int) stmtPtrPtr), col);
+        return lib.columnType(lib.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     public String column_decltype(long stmtPtrPtr, int col) throws SQLException {
-        int ptr = exports.columnDeclType(exports.ptr((int) stmtPtrPtr), col);
+        int ptr = lib.columnDeclType(lib.ptr((int) stmtPtrPtr), col);
         if (ptr == 0) {
             return null;
         } else {
@@ -628,7 +487,7 @@ public class WasmDB extends DB {
 
     @Override
     public String column_table_name(long stmtPtrPtr, int col) throws SQLException {
-        int ptr = exports.columnTableName(exports.ptr((int) stmtPtrPtr), col);
+        int ptr = lib.columnTableName(lib.ptr((int) stmtPtrPtr), col);
         if (ptr == 0) {
             return null;
         }
@@ -637,7 +496,7 @@ public class WasmDB extends DB {
 
     @Override
     public String column_name(long stmtPtrPtr, int col) throws SQLException {
-        int columnNamePtr = exports.columnName(exports.ptr((int) stmtPtrPtr), col);
+        int columnNamePtr = lib.columnName(lib.ptr((int) stmtPtrPtr), col);
         if (columnNamePtr == 0) {
             return null;
         }
@@ -646,9 +505,9 @@ public class WasmDB extends DB {
 
     @Override
     public String column_text(long stmtPtrPtr, int col) throws SQLException {
-        int stmtPtr = exports.ptr((int) stmtPtrPtr);
-        int txtPtr = exports.columnText(stmtPtr, col);
-        int txtLength = exports.columnBytes(stmtPtr, col);
+        int stmtPtr = lib.ptr((int) stmtPtrPtr);
+        int txtPtr = lib.columnText(stmtPtr, col);
+        int txtLength = lib.columnBytes(stmtPtr, col);
         if (txtPtr == 0) {
             return null;
         }
@@ -670,178 +529,191 @@ public class WasmDB extends DB {
 
     @Override
     public byte[] column_blob(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnBlob(exports.ptr((int) stmtPtrPtr), col);
+        return lib.columnBlob(lib.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     public double column_double(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnDouble(exports.ptr((int) stmtPtrPtr), col);
+        return lib.columnDouble(lib.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     public long column_long(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnLong(exports.ptr((int) stmtPtrPtr), col);
+        return lib.columnLong(lib.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     public int column_int(long stmtPtrPtr, int col) throws SQLException {
-        return exports.columnInt(exports.ptr((int) stmtPtrPtr), col);
+        return lib.columnInt(lib.ptr((int) stmtPtrPtr), col);
     }
 
     @Override
     int bind_null(long stmtPtrPtr, int pos) throws SQLException {
-        return exports.bindNull(exports.ptr((int) stmtPtrPtr), pos);
+        return lib.bindNull(lib.ptr((int) stmtPtrPtr), pos);
     }
 
     @Override
     int bind_int(long stmtPtrPtr, int pos, int v) throws SQLException {
-        return exports.bindInt(exports.ptr((int) stmtPtrPtr), pos, v);
+        return lib.bindInt(lib.ptr((int) stmtPtrPtr), pos, v);
     }
 
     @Override
     int bind_long(long stmtPtrPtr, int pos, long v) throws SQLException {
-        return exports.bindLong(exports.ptr((int) stmtPtrPtr), pos, v);
+        return lib.bindLong(lib.ptr((int) stmtPtrPtr), pos, v);
     }
 
     @Override
     int bind_double(long stmtPtrPtr, int pos, double v) throws SQLException {
-        return exports.bindDouble(exports.ptr((int) stmtPtrPtr), pos, v);
+        return lib.bindDouble(lib.ptr((int) stmtPtrPtr), pos, v);
     }
 
     @Override
     int bind_text(long stmtPtrPtr, int pos, String v) throws SQLException {
-        WasmDBExports.StringPtrSize str = exports.allocString(v);
-        int result = exports.bindText(exports.ptr((int) stmtPtrPtr), pos, str.ptr(), str.size());
-        exports.free(str.ptr());
+        WasmDBExports.StringPtrSize str = lib.allocString(v);
+        int result = lib.bindText(lib.ptr((int) stmtPtrPtr), pos, str.ptr(), str.size());
+        lib.free(str.ptr());
         return result;
     }
 
     @Override
     int bind_blob(long stmtPtrPtr, int pos, byte[] v) throws SQLException {
-        int blobPtr = exports.malloc(v.length);
+        int blobPtr = lib.malloc(v.length);
         instance.memory().write(blobPtr, v);
-        int result = exports.bindBlob(exports.ptr((int) stmtPtrPtr), pos, blobPtr, v.length);
-        exports.free(blobPtr);
+        int result = lib.bindBlob(lib.ptr((int) stmtPtrPtr), pos, blobPtr, v.length);
+        lib.free(blobPtr);
         return result;
     }
 
     @Override
     public void result_null(long context) throws SQLException {
-        throw new RuntimeException("result_null not implemented in WasmDB");
+        lib.resultNull((int) context);
     }
 
     @Override
     public void result_text(long context, String val) throws SQLException {
-        WasmDBExports.StringPtrSize txt = exports.allocString(val);
-        exports.resultText((int) context, txt.ptr(), txt.size());
-        exports.free(txt.ptr());
+        if (val == null) {
+            result_null(context);
+            return;
+        }
+
+        WasmDBExports.StringPtrSize txt = lib.allocString(val);
+        lib.resultText((int) context, txt.ptr(), txt.size());
+        lib.free(txt.ptr());
     }
 
     @Override
     public void result_blob(long context, byte[] v) throws SQLException {
-        int blobPtr = exports.malloc(v.length);
+        int blobPtr = lib.malloc(v.length);
         instance.memory().write(blobPtr, v);
-        exports.resultBlob((int) context, blobPtr, v.length);
-        exports.free(blobPtr);
+        lib.resultBlob((int) context, blobPtr, v.length);
+        lib.free(blobPtr);
     }
 
     @Override
     public void result_double(long context, double val) throws SQLException {
-        exports.resultDouble((int) context, val);
+        lib.resultDouble((int) context, val);
     }
 
     @Override
     public void result_long(long context, long val) throws SQLException {
-        exports.resultLong((int) context, val);
+        lib.resultLong((int) context, val);
     }
 
     @Override
     public void result_int(long context, int val) throws SQLException {
-        exports.resultInt((int) context, val);
+        lib.resultInt((int) context, val);
     }
 
     @Override
     public void result_error(long context, String err) throws SQLException {
-        throw new RuntimeException("result_error not implemented in WasmDB");
+        if (err == null || err.isEmpty()) {
+            lib.resultErrorNomem((int) context);
+            return;
+        }
+
+        byte[] v = err.getBytes(StandardCharsets.UTF_8);
+        int blobPtr = lib.malloc(v.length);
+        instance.memory().write(blobPtr, v);
+        lib.resultError((int) context, blobPtr, v.length);
+        lib.free(blobPtr);
     }
 
     @Override
     public String value_text(Function f, int arg) throws SQLException {
-        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
-        int txtPtr = exports.valueText(valuePtrPtr);
+        int valuePtrPtr = lib.ptr((int) f.getValueArg(arg));
+        int txtPtr = lib.valueText(valuePtrPtr);
         String result = instance.memory().readCString(txtPtr);
-        exports.free(txtPtr);
+        lib.free(txtPtr);
         return result;
     }
 
     @Override
     public byte[] value_blob(Function f, int arg) throws SQLException {
-        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
-        int blobPtr = exports.valueBlob(valuePtrPtr);
-        int length = exports.valueBytes(valuePtrPtr);
+        int valuePtrPtr = lib.ptr((int) f.getValueArg(arg));
+        int blobPtr = lib.valueBlob(valuePtrPtr);
+        int length = lib.valueBytes(valuePtrPtr);
         byte[] blob = instance.memory().readBytes(blobPtr, length);
-        exports.free(blobPtr);
+        lib.free(blobPtr);
         return blob;
     }
 
     @Override
     public double value_double(Function f, int arg) throws SQLException {
-        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
-        return exports.valueDouble(valuePtrPtr);
+        int valuePtrPtr = lib.ptr((int) f.getValueArg(arg));
+        return lib.valueDouble(valuePtrPtr);
     }
 
     @Override
     public long value_long(Function f, int arg) throws SQLException {
-        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
-        return exports.valueLong(valuePtrPtr);
+        int valuePtrPtr = lib.ptr((int) f.getValueArg(arg));
+        return lib.valueLong(valuePtrPtr);
     }
 
     @Override
     public int value_int(Function f, int arg) throws SQLException {
-        int valuePtrPtr = exports.ptr((int) f.getValueArg(arg));
-        return exports.valueInt(valuePtrPtr);
+        int valuePtrPtr = lib.ptr((int) f.getValueArg(arg));
+        return lib.valueInt(valuePtrPtr);
     }
 
     @Override
     public int value_type(Function f, int arg) throws SQLException {
-        throw new RuntimeException("value_type not implemented in WasmDB");
+        int valuePtrPtr = lib.ptr((int) f.getValueArg(arg));
+        return lib.valueType(valuePtrPtr);
     }
 
-    // TODO: seems like we need a synchronized from BusyHandlerTest.testMultiThreaded
     @Override
     public int create_function(String name, Function f, int nArgs, int flags) throws SQLException {
-        int namePtr = exports.allocCString(name);
-        int userData = UDFStore.registerFunction(f);
+        int namePtr = lib.allocCString(name);
+        int userData = UDFStore.registerFunction(name, f);
 
         int result;
         if (f instanceof Function.Aggregate) {
             boolean isWindow = f instanceof Function.Window;
             result =
-                    exports.createFunctionAggregate(
-                            dbPtr(), namePtr, nArgs, flags, userData, isWindow);
+                    lib.createFunctionAggregate(dbPtr(), namePtr, nArgs, flags, userData, isWindow);
         } else {
-            result = exports.createFunction(dbPtr(), namePtr, nArgs, flags, userData);
+            result = lib.createFunction(dbPtr(), namePtr, nArgs, flags, userData);
         }
-        exports.free(namePtr);
+        lib.free(namePtr);
         return result;
     }
 
     @Override
     public int destroy_function(String name) throws SQLException {
-        int namePtr = exports.allocCString(name);
-        int result = exports.createNullFunction(dbPtr(), namePtr);
-        // TODO: implement free from UDFStore based on name
-        exports.free(namePtr);
+        int namePtr = lib.allocCString(name);
+        int result = lib.createNullFunction(dbPtr(), namePtr);
+        UDFStore.free(name);
+        lib.free(namePtr);
         return result;
     }
 
     @Override
     public int create_collation(String name, Collation c) throws SQLException {
-        int namePtr = exports.allocCString(name);
+        int namePtr = lib.allocCString(name);
         int userData = collationStore.registerCollation(name, c);
 
-        int result = exports.createCollation(dbPtr(), namePtr, SQLITE_UTF8, userData);
-        exports.free(namePtr);
+        int result = lib.createCollation(dbPtr(), namePtr, SQLITE_UTF8, userData);
+        lib.free(namePtr);
         return result;
     }
 
@@ -849,10 +721,10 @@ public class WasmDB extends DB {
     public int destroy_collation(String name) throws SQLException {
         collationStore.free(name);
 
-        int namePtr = exports.allocCString(name);
+        int namePtr = lib.allocCString(name);
 
-        int result = exports.destroyCollation(dbPtr(), namePtr);
-        exports.free(namePtr);
+        int result = lib.destroyCollation(dbPtr(), namePtr);
+        lib.free(namePtr);
         return result;
     }
 
@@ -881,8 +753,6 @@ public class WasmDB extends DB {
                 DEFAULT_PAGES_PER_BACKUP_STEP);
     }
 
-    // TODO: backup is not respecting the SQLite semantics, re-iterate
-    // after we have a stable decision on the file/filesystem handling
     @Override
     public int backup(
             String dbName,
@@ -892,10 +762,10 @@ public class WasmDB extends DB {
             int nTimeoutLimit,
             int pagesPerStep)
             throws SQLException {
-        int originNamePtr = exports.allocCString(dbName);
-        int destNamePtr = exports.allocCString(destFileName);
-        int mainStrPtr = exports.allocCString("main");
-        int destDbPtr = exports.malloc(PTR_SIZE);
+        int originNamePtr = lib.allocCString(dbName);
+        int destNamePtr = lib.allocCString(destFileName);
+        int mainStrPtr = lib.allocCString("main");
+        int destDbPtr = lib.malloc(PTR_SIZE);
 
         int flags = SQLITE_OPEN_READWRITE + SQLITE_OPEN_CREATE;
         if (destFileName.startsWith("file:")) {
@@ -922,18 +792,17 @@ public class WasmDB extends DB {
                     SQLiteErrorCode.SQLITE_ERROR);
         }
 
-        int rc = exports.openV2(destNamePtr, destDbPtr, flags, 0);
+        int rc = lib.openV2(destNamePtr, destDbPtr, flags, 0);
         int nTimeout = 0;
         if (rc == SQLITE_OK) {
-            int pBackup =
-                    exports.backupInit(exports.ptr(destDbPtr), mainStrPtr, dbPtr(), originNamePtr);
+            int pBackup = lib.backupInit(lib.ptr(destDbPtr), mainStrPtr, dbPtr(), originNamePtr);
             do {
-                rc = exports.backupStep(pBackup, pagesPerStep);
+                rc = lib.backupStep(pBackup, pagesPerStep);
 
                 // if the step completed successfully, update progress
                 if (observer != null && (rc == SQLITE_OK || rc == SQLITE_DONE)) {
-                    int remaining = exports.backupRemaining(pBackup);
-                    int pageCount = exports.backupPageCount(pBackup);
+                    int remaining = lib.backupRemaining(pBackup);
+                    int pageCount = lib.backupPageCount(pBackup);
                     observer.progress(remaining, pageCount);
                 }
 
@@ -941,18 +810,18 @@ public class WasmDB extends DB {
                     if (nTimeout++ >= nTimeoutLimit) {
                         break;
                     }
-                    exports.sleep(sleepTimeMillis);
+                    lib.sleep(sleepTimeMillis);
                 }
             } while (rc == SQLITE_OK || rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
 
-            exports.backupFinish(pBackup);
-            rc = exports.extendedErrorcode(exports.ptr(destDbPtr));
+            lib.backupFinish(pBackup);
+            rc = lib.extendedErrorcode(lib.ptr(destDbPtr));
         }
 
-        exports.free(originNamePtr);
-        exports.free(destNamePtr);
-        exports.free(destDbPtr);
-        exports.free(mainStrPtr);
+        lib.free(originNamePtr);
+        lib.free(destNamePtr);
+        lib.free(destDbPtr);
+        lib.free(mainStrPtr);
 
         // and now copy the backup file from the VFS to the real disk
         Path realDiskDest = Path.of(destFileName);
@@ -988,10 +857,10 @@ public class WasmDB extends DB {
             int nTimeoutLimit,
             int pagesPerStep)
             throws SQLException {
-        int destNamePtr = exports.allocCString(dbName);
-        int sourceNamePtr = exports.allocCString(sourceFileName);
-        int mainStrPtr = exports.allocCString("main");
-        int sourceDbPtr = exports.malloc(PTR_SIZE);
+        int destNamePtr = lib.allocCString(dbName);
+        int sourceNamePtr = lib.allocCString(sourceFileName);
+        int mainStrPtr = lib.allocCString("main");
+        int sourceDbPtr = lib.malloc(PTR_SIZE);
 
         int flags = SQLITE_OPEN_READONLY;
         if (sourceFileName.startsWith("file:")) {
@@ -1010,18 +879,17 @@ public class WasmDB extends DB {
                     SQLiteErrorCode.SQLITE_ERROR);
         }
 
-        int rc = exports.openV2(sourceNamePtr, sourceDbPtr, flags, 0);
+        int rc = lib.openV2(sourceNamePtr, sourceDbPtr, flags, 0);
         int nTimeout = 0;
         if (rc == SQLITE_OK) {
-            int pBackup =
-                    exports.backupInit(dbPtr(), destNamePtr, exports.ptr(sourceDbPtr), mainStrPtr);
+            int pBackup = lib.backupInit(dbPtr(), destNamePtr, lib.ptr(sourceDbPtr), mainStrPtr);
             do {
-                rc = exports.backupStep(pBackup, pagesPerStep);
+                rc = lib.backupStep(pBackup, pagesPerStep);
 
                 // if the step completed successfully, update progress
                 if (observer != null && (rc == SQLITE_OK || rc == SQLITE_DONE)) {
-                    int remaining = exports.backupRemaining(pBackup);
-                    int pageCount = exports.backupPageCount(pBackup);
+                    int remaining = lib.backupRemaining(pBackup);
+                    int pageCount = lib.backupPageCount(pBackup);
                     observer.progress(remaining, pageCount);
                 }
 
@@ -1029,25 +897,25 @@ public class WasmDB extends DB {
                     if (nTimeout++ >= nTimeoutLimit) {
                         break;
                     }
-                    exports.sleep(sleepTimeMillis);
+                    lib.sleep(sleepTimeMillis);
                 }
             } while (rc == SQLITE_OK || rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
 
-            exports.backupFinish(pBackup);
-            rc = exports.extendedErrorcode(exports.ptr(sourceDbPtr));
+            lib.backupFinish(pBackup);
+            rc = lib.extendedErrorcode(lib.ptr(sourceDbPtr));
         }
 
-        exports.free(destNamePtr);
-        exports.free(destNamePtr);
-        exports.free(sourceDbPtr);
-        exports.free(mainStrPtr);
+        lib.free(destNamePtr);
+        lib.free(destNamePtr);
+        lib.free(sourceDbPtr);
+        lib.free(mainStrPtr);
 
         return rc;
     }
 
     @Override
     public int limit(int id, int value) throws SQLException {
-        return exports.limit(dbPtr(), id, value);
+        return lib.limit(dbPtr(), id, value);
     }
 
     @Override
@@ -1055,37 +923,37 @@ public class WasmDB extends DB {
             throws SQLException {
         int progressHandlerIdx = dbPtr();
         ProgressHandlerStore.registerProgressHandler(progressHandlerIdx, progressHandler);
-        exports.progressHandler(dbPtr(), vmCalls, progressHandlerIdx);
+        lib.progressHandler(dbPtr(), vmCalls, progressHandlerIdx);
     }
 
     @Override
     public void clear_progress_handler() throws SQLException {
         ProgressHandlerStore.free(dbPtr());
-        exports.progressHandler(dbPtr(), 0, 0);
+        lib.progressHandler(dbPtr(), 0, 0);
     }
 
     @Override
     boolean[][] column_metadata(long stmtPtrPtr) throws SQLException {
-        int stmtPtr = exports.ptr((int) stmtPtrPtr);
-        int colCount = exports.columnCount(stmtPtr);
+        int stmtPtr = lib.ptr((int) stmtPtrPtr);
+        int colCount = lib.columnCount(stmtPtr);
 
         boolean[][] result = new boolean[colCount][3];
 
         for (int i = 0; i < colCount; i++) {
             // load passed column name and table name
-            int zColumnNamePtr = exports.columnName(stmtPtr, i);
-            int zTableNamePtr = exports.columnTableName(stmtPtr, i);
+            int zColumnNamePtr = lib.columnName(stmtPtr, i);
+            int zTableNamePtr = lib.columnTableName(stmtPtr, i);
 
-            int pNotNullPtr = exports.malloc(1);
-            int pPrimaryKeyPtr = exports.malloc(1);
-            int pAutoincPtr = exports.malloc(1);
+            int pNotNullPtr = lib.malloc(1);
+            int pPrimaryKeyPtr = lib.malloc(1);
+            int pAutoincPtr = lib.malloc(1);
 
             instance.memory().writeByte(pNotNullPtr, (byte) 0);
             instance.memory().writeByte(pPrimaryKeyPtr, (byte) 0);
             instance.memory().writeByte(pAutoincPtr, (byte) 0);
 
             int res =
-                    exports.columnMetadata(
+                    lib.columnMetadata(
                             dbPtr(),
                             zTableNamePtr,
                             zColumnNamePtr,
@@ -1097,9 +965,9 @@ public class WasmDB extends DB {
             result[i][0] = instance.memory().read(pNotNullPtr) > 0;
             result[i][1] = instance.memory().read(pPrimaryKeyPtr) > 0;
             result[i][2] = instance.memory().read(pAutoincPtr) > 0;
-            exports.free(pNotNullPtr);
-            exports.free(pPrimaryKeyPtr);
-            exports.free(pAutoincPtr);
+            lib.free(pNotNullPtr);
+            lib.free(pPrimaryKeyPtr);
+            lib.free(pAutoincPtr);
         }
         return result;
     }
@@ -1107,48 +975,48 @@ public class WasmDB extends DB {
     @Override
     void set_commit_listener(boolean enabled) {
         if (enabled) {
-            exports.commitHook(this.dbPtr, 0);
-            exports.rollbackHook(this.dbPtr, 0);
+            lib.commitHook(this.dbPtr, 0);
+            lib.rollbackHook(this.dbPtr, 0);
         } else {
-            exports.deleteCommitHook(this.dbPtr);
-            exports.deleteRollbackHook(this.dbPtr);
+            lib.deleteCommitHook(this.dbPtr);
+            lib.deleteRollbackHook(this.dbPtr);
         }
     }
 
     @Override
     void set_update_listener(boolean enabled) {
         if (enabled) {
-            exports.updateHook(this.dbPtr, 0);
+            lib.updateHook(this.dbPtr, 0);
         } else {
-            exports.deleteUpdateHook(this.dbPtr);
+            lib.deleteUpdateHook(this.dbPtr);
         }
     }
 
     @Override
     public byte[] serialize(String schema) throws SQLException {
-        int schemaPtr = exports.allocCString(schema);
-        int sizePtr = exports.malloc(8);
+        int schemaPtr = lib.allocCString(schema);
+        int sizePtr = lib.malloc(8);
 
-        int buffPtr = exports.serialize(dbPtr(), schemaPtr, sizePtr, SQLITE_SERIALIZE_NOCOPY);
+        int buffPtr = lib.serialize(dbPtr(), schemaPtr, sizePtr, SQLITE_SERIALIZE_NOCOPY);
         boolean needFree = false;
         if (buffPtr == 0) {
             // This happens if we start without a deserialized database
-            buffPtr = exports.serialize(dbPtr(), schemaPtr, sizePtr, 0);
+            buffPtr = lib.serialize(dbPtr(), schemaPtr, sizePtr, 0);
             needFree = true;
         }
 
         long buffSize = instance.memory().readLong(sizePtr);
 
         if (buffSize > Integer.MAX_VALUE || buffSize < 0L) {
-            throw new SQLException("buffer is too large, handle this situation");
+            throw new SQLException("Serialized buffer is larger than an integer");
         }
 
-        exports.free(sizePtr);
-        exports.free(schemaPtr);
+        lib.free(sizePtr);
+        lib.free(schemaPtr);
 
         byte[] result = instance.memory().readBytes(buffPtr, (int) buffSize);
         if (needFree) {
-            exports.free(buffPtr);
+            lib.free(buffPtr);
         }
 
         return result;
@@ -1156,11 +1024,11 @@ public class WasmDB extends DB {
 
     @Override
     public void deserialize(String schema, byte[] buff) throws SQLException {
-        int schemaPtr = exports.allocCString(schema);
-        int buffPtr = exports.malloc(buff.length);
+        int schemaPtr = lib.allocCString(schema);
+        int buffPtr = lib.malloc(buff.length);
         instance.memory().write(buffPtr, buff);
 
-        int res = exports.deserialize(dbPtr(), schemaPtr, buffPtr, buff.length);
+        int res = lib.deserialize(dbPtr(), schemaPtr, buffPtr, buff.length);
         if (res != SQLITE_OK) {
             throw DB.newSQLException(res, errmsg());
         }
@@ -1217,8 +1085,8 @@ public class WasmDB extends DB {
     }
 
     // This call is expensive as it will start an extra module
-    // TODO: check if we can use caches
-    // TODO: refactor instance creation!
+    // Should we cache something?
+    // another alternative is to compute it at compile time ...
     public static String version() {
         WasiOptions wasiOpts = WasiOptions.builder().build();
 
@@ -1229,116 +1097,7 @@ public class WasmDB extends DB {
                             .withImportValues(
                                     ImportValues.builder()
                                             .addFunction(wasiPreview1.toHostFunctions())
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xFunc",
-                                                            List.of(
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I32),
-                                                            List.of(),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xStep",
-                                                            List.of(
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I32),
-                                                            List.of(),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xFinal",
-                                                            List.of(ValueType.I32),
-                                                            List.of(),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xValue",
-                                                            List.of(ValueType.I32),
-                                                            List.of(),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xInverse",
-                                                            List.of(
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I32),
-                                                            List.of(),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xDestroy",
-                                                            List.of(ValueType.I32),
-                                                            List.of(),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xProgress",
-                                                            List.of(ValueType.I32),
-                                                            List.of(ValueType.I32),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xBusy",
-                                                            List.of(ValueType.I32, ValueType.I32),
-                                                            List.of(ValueType.I32),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xCompare",
-                                                            List.of(
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I32),
-                                                            List.of(ValueType.I32),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xDestroyCollation",
-                                                            List.of(ValueType.I32),
-                                                            List.of(),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xUpdate",
-                                                            List.of(
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I32,
-                                                                    ValueType.I64),
-                                                            List.of(),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xCommit",
-                                                            List.of(ValueType.I32),
-                                                            List.of(ValueType.I32),
-                                                            (inst, args) -> null))
-                                            .addFunction(
-                                                    new HostFunction(
-                                                            "env",
-                                                            "xRollback",
-                                                            List.of(ValueType.I32),
-                                                            List.of(),
-                                                            (inst, args) -> null))
+                                            .addFunction(new DummyWasmDBImports().toHostFunctions())
                                             .build())
                             .withStart(false)
                             .build();

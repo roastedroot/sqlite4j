@@ -25,31 +25,8 @@
 package com.github.andreaTP.sqlite.wasm;
 
 import com.github.andreaTP.sqlite.wasm.core.WasmDB;
-import com.github.andreaTP.sqlite.wasm.util.Logger;
-import com.github.andreaTP.sqlite.wasm.util.LoggerFactory;
-import com.github.andreaTP.sqlite.wasm.util.OSInfo;
 
-/**
- * Set the system properties, org.sqlite.lib.path, org.sqlite.lib.name, appropriately so that the
- * SQLite JDBC driver can find *.dll, *.dylib and *.so files, according to the current OS (win,
- * linux, mac).
- *
- * <p>The library files are automatically extracted from this project's package (JAR).
- *
- * <p>usage: call {@link #initialize()} before using SQLite JDBC driver.
- *
- * @author leo
- */
-// TODO: clean this file up from everything not needed
 public class SQLiteJDBCLoader {
-    private static final Logger logger = LoggerFactory.getLogger(SQLiteJDBCLoader.class);
-
-    @SuppressWarnings("unused")
-    private static void getNativeLibraryFolderForTheCurrentOS() {
-        String osName = OSInfo.getOSName();
-        String archName = OSInfo.getArchName();
-    }
-
     /**
      * @return The major version of the SQLite JDBC driver.
      */
