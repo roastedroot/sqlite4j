@@ -7,4 +7,5 @@ NOTES:
 - disabled the tests relying on multiple threads as it's not supported and shared_cache
 
 - write a new Memory that will bulk grow -> alternatively we can explore looking at: SQLITE_ENABLE_MEMSYS3
-- fix the last remaining 8 tests, how should the connection be shared?
+- update the README file
+
