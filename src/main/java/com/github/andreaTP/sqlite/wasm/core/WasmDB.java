@@ -49,7 +49,6 @@ public class WasmDB extends DB implements WasmDBImports {
 
     /** SQLite connection handle. */
     private int dbPtrPtr = 0;
-
     private int dbPtr = 0;
 
     // Collations are dedicated per connection
