@@ -62,10 +62,11 @@ public class SavepointTest {
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(1);
         rs.close();
-        rs = stat2.executeQuery(countSql);
-        assertThat(rs.next()).isTrue();
-        assertThat(rs.getInt(1)).isEqualTo(0);
-        rs.close();
+        // Multiple connections are not allowed: SQLITE_THREADSAFE=0
+        //        rs = stat2.executeQuery(countSql);
+        //        assertThat(rs.next()).isTrue();
+        //        assertThat(rs.getInt(1)).isEqualTo(0);
+        //        rs.close();
 
         conn1.commit();
 
@@ -143,6 +144,8 @@ public class SavepointTest {
         assertThat(rs.getInt(1)).isEqualTo(1 + 2 + 3 + 4 + 5 + 6 + 7);
         rs.close();
 
+        // Multiple connections are not allowed: SQLITE_THREADSAFE=0
+        stat1.execute("rollback;");
         rs = stat2.executeQuery("select sum(c1) from t;");
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(1 + 2 + 3 + 4 + 5);
@@ -164,10 +167,11 @@ public class SavepointTest {
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(1);
         rs.close();
-        rs = stat2.executeQuery(countSql);
-        assertThat(rs.next()).isTrue();
-        assertThat(rs.getInt(1)).isEqualTo(0);
-        rs.close();
+        // Multiple connections are not allowed: SQLITE_THREADSAFE=0
+        //        rs = stat2.executeQuery(countSql);
+        //        assertThat(rs.next()).isTrue();
+        //        assertThat(rs.getInt(1)).isEqualTo(0);
+        //        rs.close();
 
         Savepoint innerSP = conn1.setSavepoint("inner_sp");
         assertThat(stat1.executeUpdate("insert into trans values (5);")).isEqualTo(1);
@@ -177,18 +181,20 @@ public class SavepointTest {
         assertThat(rs.next()).isTrue();
         assertThat(rs.getInt(1)).isEqualTo(2);
         rs.close();
-        rs = stat2.executeQuery(countSql);
-        assertThat(rs.next()).isTrue();
-        assertThat(rs.getInt(1)).isEqualTo(0);
-        rs.close();
+        // Multiple connections are not allowed: SQLITE_THREADSAFE=0
+        //        rs = stat2.executeQuery(countSql);
+        //        assertThat(rs.next()).isTrue();
+        //        assertThat(rs.getInt(1)).isEqualTo(0);
+        //        rs.close();
 
         // releasing an inner savepoint, statements are still wrapped by the outer savepoint
         conn1.releaseSavepoint(innerSP);
 
-        rs = stat2.executeQuery(countSql);
-        assertThat(rs.next()).isTrue();
-        assertThat(rs.getInt(1)).isEqualTo(0);
-        rs.close();
+        // Multiple connections are not allowed: SQLITE_THREADSAFE=0
+        //        rs = stat2.executeQuery(countSql);
+        //        assertThat(rs.next()).isTrue();
+        //        assertThat(rs.getInt(1)).isEqualTo(0);
+        //        rs.close();
 
         // releasing the outer savepoint is like a commit
         conn1.releaseSavepoint(outerSP);
