@@ -55,8 +55,8 @@ cp ${SCRIPT_DIR}/sqlite3_helpers.c ${SCRIPT_DIR}/sqlite-amalgamation/
 	    -mbulk-memory -mreference-types \
         -mexec-model=reactor \
         -g0 -Oz \
-        -DSQLITE_ENABLE_LOAD_EXTENSION=1 \
-	    -DSQLITE_HAVE_ISNAN \
+		-DSQLITE_ENABLE_LOAD_EXTENSION=0 \
+	    -DSQLITE_HAVE_ISNAN=1 \
 	    -DHAVE_USLEEP=1 \
 	    -DSQLITE_ENABLE_COLUMN_METADATA \
 	    -DSQLITE_CORE \
@@ -77,7 +77,17 @@ cp ${SCRIPT_DIR}/sqlite3_helpers.c ${SCRIPT_DIR}/sqlite-amalgamation/
 	    -DSQLITE_MAX_ATTACHED=125 \
 	    -DSQLITE_MAX_PAGE_COUNT=4294967294 \
 	    -DSQLITE_DISABLE_PAGECACHE_OVERFLOW_STATS \
-		-DSQLITE_USE_ALLOCA=1 \
+		-DSQLITE_USE_ALLOCA=0 \
+		-DSQLITE_4_BYTE_ALIGNED_MALLOC=1 \
+		-DSQLITE_32BIT_ROWID=1 \
+		-DSQLITE_DEFAULT_LOCKING_MODE=0 \
+		-DSQLITE_THREADSAFE=0 \
+		-DSQLITE_OMIT_SHARED_CACHE=1
+
+
+		# -DSQLITE_OMIT_WAL=0 \
+		# this shows more errors on varous tests -> is it useful to include?
+		# -DSQLITE_MEMDEBUG=1
 
 		# Use ALLOCA is an experiment, verify
 		# SQLITE_OMIT_LOAD_EXTENSION -> doesn't seems to be used in the WASI build

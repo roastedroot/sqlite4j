@@ -86,7 +86,6 @@ public class BusyHandlerTest {
                 stat.executeUpdate("create table foo (id integer);");
                 stat.execute("insert into foo (id) values (wait_for_latch());");
             } catch (SQLException ex) {
-                System.out.println("HERE" + ex);
                 throw new RuntimeException(ex);
             } finally {
                 try {

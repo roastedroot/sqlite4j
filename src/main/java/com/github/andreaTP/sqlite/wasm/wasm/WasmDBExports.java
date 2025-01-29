@@ -96,8 +96,8 @@ public class WasmDBExports {
     private final int xDestroyPtr;
     private final int xProgressPtr;
     private final int xBusyPtr;
-    private final int xCompare;
-    private final int xDestroyCollation;
+    private final int xComparePtr;
+    private final int xDestroyCollationPtr;
     private final int xUpdatePtr;
     private final int xCommitPtr;
     private final int xRollbackPtr;
@@ -113,8 +113,8 @@ public class WasmDBExports {
         this.xDestroyPtr = (int) instance.exports().function("xDestroyPtr").apply()[0];
         this.xProgressPtr = (int) instance.exports().function("xProgressPtr").apply()[0];
         this.xBusyPtr = (int) instance.exports().function("xBusyPtr").apply()[0];
-        this.xCompare = (int) instance.exports().function("xComparePtr").apply()[0];
-        this.xDestroyCollation =
+        this.xComparePtr = (int) instance.exports().function("xComparePtr").apply()[0];
+        this.xDestroyCollationPtr =
                 (int) instance.exports().function("xDestroyCollationPtr").apply()[0];
         this.xUpdatePtr = (int) instance.exports().function("xUpdatePtr").apply()[0];
         this.xCommitPtr = (int) instance.exports().function("xCommitPtr").apply()[0];
@@ -181,7 +181,8 @@ public class WasmDBExports {
         this.backupRemaining = instance.exports().function("sqlite3_backup_remaining");
         this.backupPageCount = instance.exports().function("sqlite3_backup_pagecount");
         this.sleep = instance.exports().function("sqlite3_sleep");
-        this.sharedCache = instance.exports().function("sqlite3_enable_shared_cache");
+        this.sharedCache = null;
+        // instance.exports().function("sqlite3_enable_shared_cache");
 
         this.progressHandler = instance.exports().function("sqlite3_progress_handler");
         this.busyHandler = instance.exports().function("sqlite3_busy_handler");
@@ -561,7 +562,13 @@ public class WasmDBExports {
     public int createCollation(int dbPtr, int zNamePtr, int eTextPtr, int userData) {
         return (int)
                 createCollation
-                        .apply(dbPtr, zNamePtr, eTextPtr, userData, xCompare, xDestroyCollation)[0];
+                        .apply(
+                                dbPtr,
+                                zNamePtr,
+                                eTextPtr,
+                                userData,
+                                xComparePtr,
+                                xDestroyCollationPtr)[0];
     }
 
     public int destroyCollation(int dbPtr, int zNamePtr) {
@@ -617,6 +624,7 @@ public class WasmDBExports {
     }
 
     public int sharedCache(boolean enable) {
-        return (int) sharedCache.apply((enable) ? 1 : 0)[0];
+        // return (int) sharedCache.apply((enable) ? 1 : 0)[0];
+        return 0;
     }
 }

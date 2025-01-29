@@ -42,6 +42,10 @@ public class WasmDB extends DB {
     public static final int PTR_SIZE = 4;
 
     private static final WasmModule MODULE = SQLiteModule.load();
+    // DEBUG
+    //     private static final WasmModule MODULE =
+    //            Parser.parse(new
+    //                    File("/home/aperuffo/workspace/sqlite-jdbc/wasm-lib/libsqlite3.wasm"));
 
     private final Instance instance;
     private final WasiPreview1 wasiPreview1;
@@ -471,7 +475,7 @@ public class WasmDB extends DB {
             exports.close(dbPtr());
             throw DB.newSQLException(errCode, errmsg());
         }
-        exports.free(dbNamePtr);
+        // exports.free(dbNamePtr);
     }
 
     @Override
@@ -493,7 +497,6 @@ public class WasmDB extends DB {
     @Override
     protected int finalize(long stmtPtrPtr) throws SQLException {
         int result = exports.finalize(exports.ptr((int) stmtPtrPtr));
-        exports.free((int) stmtPtrPtr);
         return result;
     }
 
@@ -575,34 +578,27 @@ public class WasmDB extends DB {
     @Override
     protected void _close() throws SQLException {
         int dbPtr = dbPtr();
-        ProgressHandlerStore.free(dbPtr);
-        BusyHandlerStore.free(dbPtr);
-        updateListeners.clear();
-        commitListeners.clear();
+        if (dbPtr != 0) {
+            ProgressHandlerStore.free(dbPtr);
+            BusyHandlerStore.free(dbPtr);
+            updateListeners.clear();
+            commitListeners.clear();
 
-        int res = exports.close(dbPtr);
-        if (res != SQLITE_OK) {
-            throw DB.newSQLException(res, errmsg());
+            int res = exports.close(dbPtr);
+            if (res != SQLITE_OK) {
+                throw DB.newSQLException(res, errmsg());
+            }
+
+            exports.free(dbPtrPtr);
+
+            // The handlers tests are failing when resetting those pointers
+            // TODO: investigate the reason!
+            this.dbPtr = 0;
+            this.dbPtrPtr = 0;
         }
-
-        exports.free(dbPtrPtr);
-
-        // The handlers tests are failing when resetting those pointers
-        // TODO: investigate the reason!
-        this.dbPtr = 0;
-        this.dbPtrPtr = 0;
-        // TODO: when can we cleanup those resources?
-        // Moving the library to load once this is a downside
-        //        if (FS != null) {
-        //            try {
-        //                FS.close();
-        //            } catch (IOException e) {
-        //                throw new RuntimeException(e);
-        //            }
-        //        }
-        //        if (WASI_PREVIEW_1 != null) {
-        //            WASI_PREVIEW_1.close();
-        //        }
+        if (wasiPreview1 != null) {
+            wasiPreview1.close();
+        }
     }
 
     @Override
@@ -677,8 +673,8 @@ public class WasmDB extends DB {
         //        } else {
         result = new String(bytes, StandardCharsets.UTF_8);
         //        }
-        // TODO: verify if this result doesn't need a free ...
-        // EXPORTS.free(txtPtr);
+        // TODO: verify if this result doesn't need a free, looks like no
+        // exports.free(txtPtr);
         return result;
     }
 
@@ -795,7 +791,6 @@ public class WasmDB extends DB {
         int length = exports.valueBytes(valuePtrPtr);
         byte[] blob = instance.memory().readBytes(blobPtr, length);
         exports.free(blobPtr);
-
         return blob;
     }
 
@@ -1145,17 +1140,26 @@ public class WasmDB extends DB {
         int sizePtr = exports.malloc(8);
 
         int buffPtr = exports.serialize(dbPtr(), schemaPtr, sizePtr, SQLITE_SERIALIZE_NOCOPY);
+        boolean needFree = false;
         if (buffPtr == 0) {
             // This happens if we start without a deserialized database
             buffPtr = exports.serialize(dbPtr(), schemaPtr, sizePtr, 0);
+            needFree = true;
         }
 
         long buffSize = instance.memory().readLong(sizePtr);
+
+        if (buffSize > Integer.MAX_VALUE || buffSize < 0L) {
+            throw new SQLException("buffer is too large, handle this situation");
+        }
+
         exports.free(sizePtr);
         exports.free(schemaPtr);
 
         byte[] result = instance.memory().readBytes(buffPtr, (int) buffSize);
-        exports.free(buffPtr);
+        if (needFree) {
+            exports.free(buffPtr);
+        }
 
         return result;
     }
@@ -1171,7 +1175,9 @@ public class WasmDB extends DB {
             throw DB.newSQLException(res, errmsg());
         }
 
+        // DO NOT FREE those!
         // exports.free(schemaPtr);
+        // exports.free(buffPtr);
     }
 
     /**

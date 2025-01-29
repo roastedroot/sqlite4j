@@ -433,7 +433,7 @@ public abstract class SQLiteConnection implements Connection {
         if (isClosed()) return;
         if (meta != null) meta.close();
 
-        // TODO: how to clean this up?
+        // TODO: how to clean this up? Only when there are no more DBs around?
         // We should never close the FileSystem as other connections might be using it ...
         //        if (fs != null) {
         //            try {

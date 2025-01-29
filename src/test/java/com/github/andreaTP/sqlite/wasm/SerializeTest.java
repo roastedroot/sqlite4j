@@ -98,15 +98,12 @@ public class SerializeTest {
             connection.deserialize("a_schema", bb);
             for (int i = 0; i < 10; ++i) {
                 connection.setAutoCommit(false);
-                // TODO: WASM: reducing cardinality
-                for (int j = 0; j < 1000; ++j) {
-                    // for (int j = 0; j < 10000; ++j) {
+                for (int j = 0; j < 10000; ++j) {
                     execute(connection, "INSERT INTO a_schema.a_table (x) values (?)", i);
                 }
                 connection.setAutoCommit(true);
-                // TODO: WASM: reducing cardinality
                 assertThat(fetch(connection, "SELECT COUNT(1) FROM a_schema.a_table"))
-                        .isEqualTo(1001);
+                        .isEqualTo(10001);
                 connection.deserialize("a_schema", bb);
                 assertThat(fetch(connection, "SELECT COUNT(1) FROM a_schema.a_table")).isEqualTo(1);
             }
