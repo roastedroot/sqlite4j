@@ -1,7 +1,5 @@
 name: CI
 
-name: CI
-
 on:
   push:
   # TODO: work with PRs as soon as it's a bit more mature
