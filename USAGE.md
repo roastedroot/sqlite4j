@@ -111,20 +111,6 @@ config.recursiveTriggers(true);
 try (Connection conn = DriverManager.getConnection("jdbc:sqlite:sample.db", config.toProperties())) { /*...*/ }
 ```
 
-## How to Use Encrypted Databases
-*__Important: xerial/sqlite-jdbc does not support encryption out of the box, you need a special .dll/.so__*
-
-SQLite support encryption of the database via special drivers and a key. To use an encrypted database you need a driver which supports encrypted database via `pragma key` or `pragma hexkey`, e.g. SQLite SSE or SQLCipher. You need to specify those drivers via directly referencing the .dll/.so through:
-```
--Dorg.sqlite.lib.path=.
--Dorg.sqlite.lib.name=sqlite_cryption_support.dll
-```
-
-Now the only need to specify the password is via:
-```java
-try (Connection connection = DriverManager.getConnection("jdbc:sqlite:db.sqlite", "", "password")) { /*...*/ }
-```
-
 ### Binary Passphrase
 If you need to provide the password in binary form, you have to specify how the provided .dll/.so needs it. There are two different modes available:
 
@@ -184,20 +170,3 @@ config.setExplicitReadOnly(true);
 ```java
 try (Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:?jdbc.explicit_readonly=true")) { /*...*/ }
 ```
-
-## How to use with Android
-
-Android expects JNI native libraries to be bundled differently than a normal Java application.
-
-You will need to extract the native libraries from our jar (from `org/sqlite/native/Linux-Android`), and place them in the `jniLibs` directory:
-
-![android-studio-screenshot](./.github/README_IMAGES/android_jnilibs.png)
-
-The name of directories in our jar and in Android Studio differ, here is a mapping table:
-
-| Jar directory | Android Studio directory |
-|---------------|--------------------------|
-| aarch64       | arm64-v8a                |
-| arm           | armeabi                  |
-| x86           | x86                      |
-| x86_64        | x86_64                   |
