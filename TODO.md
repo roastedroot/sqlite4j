@@ -5,3 +5,7 @@ Keeping track of the loose ends:
 - disabling BusyHandlerTest.testMultiThreaded as it's not clear how it should work, get back to it
 - disabled most of the ErrorMessageTest tests as they rely on dynamically moving files around, which is not supported
 - SerializeTest.testMultiDeserialize is growing the memory too much, a lower cardinality works as expected ...
+
+- write a new Memory that will bulk grow
+- verify the bug on the memory bounds
+- fix the last remaining 8 tests, how should the connection be shared?
