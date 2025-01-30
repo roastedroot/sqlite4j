@@ -8,4 +8,4 @@ NOTES:
 
 - write a new Memory that will bulk grow -> alternatively we can explore looking at: SQLITE_ENABLE_MEMSYS3
 - update the README file
-
+- jimfs without Guava

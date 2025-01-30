@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.andreaTP.sqlite.wasm</groupId>
     <artifactId>sqlite-jdbc-wasm</artifactId>
-    <version>999-SNAPSHOT</version>
+    <version>0.0.1-SNAPSHOT</version>
     <name>SQLite JDBC WASM</name>
     <description>SQLite JDBC library running in Wasm thanks to Chicory</description>
     <url>https://github.com/andreaTP/sqlite-jdbc-wasm</url>
