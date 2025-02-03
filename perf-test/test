@@ -4,7 +4,7 @@
 //REPOS mavencentral,jitpack
 //DEPS com.github.andreaTP:sqlite-jdbc-wasm:main-SNAPSHOT
 
-// // DEPS com.github.andreaTP.sqlite.wasm:sqlite-jdbc-wasm:999-SNAPSHOT
+// // DEPS com.github.andreaTP.sqlite.wasm:sqlite-jdbc-wasm:3.48.0.0-SNAPSHOT
 
 import static java.lang.System.*;
 
