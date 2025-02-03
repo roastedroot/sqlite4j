@@ -6,6 +6,6 @@ NOTES:
 - disabled most of the ErrorMessageTest tests as they rely on dynamically moving files around, which is not supported
 - disabled the tests relying on multiple threads as it's not supported and shared_cache
 
-- write a new Memory that will bulk grow -> alternatively we can explore looking at: SQLITE_ENABLE_MEMSYS3
+- write a new Memory that will bulk grow -> alternatively we can explore looking at: SQLITE_ENABLE_MEMSYS3 -> initial proposal
 - update the README file
-- jimfs without Guava
+- jimfs without Guava?

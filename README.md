@@ -1,224 +1,118 @@
-# SQLite JDBC Driver on WASM
+# SQLite4j
 
-This is a port of the awesome [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/) to run in pure Java with SQLite compiled to WASM.
+This is a port of the awesome [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/) to run in pure Java with SQLite compiled to WASM thanks to [Chicory](https://github.com/dylibso/chicory).
 
-This is currently a **Work In Progress**.
+## Why?
 
-below the original readme:
----
+This project exists because we want to run the popular and widely used [SQLite](https://www.sqlite.org/) database in pure Java.
+Among the main reasons:
 
-= SQLite JDBC Driver
-:project-version: 3.48.0.0
+- **portability**: it can run on stock JVMs without additional dependencies
+- **safety**: not escaping the JVM boundaries gives a number of advantages
+  - the JVM will not crash because of an issue in the database
+  - we get all the observability and tooling for runtime analysis
 
-image:https://img.shields.io/github/actions/workflow/status/xerial/sqlite-jdbc/ci.yml?branch=master[GitHub Workflow Status (branch),link=https://github.com/xerial/sqlite-jdbc/actions/workflows/ci.yml?query=branch%3Amaster]
-image:https://badges.gitter.im/xerial/sqlite-jdbc.svg[Join the chat,link=https://gitter.im/xerial/sqlite-jdbc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge]
-image:https://maven-badges.herokuapp.com/maven-central/org.xerial/sqlite-jdbc/badge.svg[Maven Central,link=https://maven-badges.herokuapp.com/maven-central/org.xerial/sqlite-jdbc/]
-image:https://javadoc.io/badge2/org.xerial/sqlite-jdbc/javadoc.svg[javadoc,link=https://javadoc.io/doc/org.xerial/sqlite-jdbc]
-image:https://img.shields.io/nexus/s/org.xerial/sqlite-jdbc?color=blue&label=maven%20snapshot&server=https%3A%2F%2Foss.sonatype.org%2F[Sonatype Nexus (Snapshots),link=https://oss.sonatype.org/content/repositories/snapshots/org/xerial/sqlite-jdbc/]
+## How it works
 
-SQLite JDBC is a library for accessing and creating https://www.sqlite.org[SQLite] database files in Java.
+<p align="center">
+  <picture>
+    <img width="400" src="imgs/sqlite-compilation.png">
+  </picture>
+</p>
 
-Our SQLiteJDBC library requires no configuration since native libraries for major OSs, including Windows, macOS, Linux etc., are assembled into a single JAR (Java Archive) file.
+There are a few steps to achieve the result:
 
-== Project Status
+  - compile SQLite to [WebAssembly](https://webassembly.org/)
+  - translate the SQLite payload to pure Java bytecode using [Chicory AOT](https://chicory.dev/docs/experimental/aot)
+  - run SQLite similarly to how it's done using JNI in the original JDBC dirver, but all in pure Java
+  - ship an extremely small and self contained `jar` that can run wherever the JVM can go!
 
-The project is maintained, but is not being actively developed:
+## Design Decisions
 
-- We follow every new version of SQLite and will release a corresponding version of our driver.
-- Bugs will be investigated, and fixed if possible.
-- New features are driven by pull requests.
+You can mostly expect to have a bheavior equal to the original [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/), there are, although, some notable differences due to the different nature of WASM.
 
-The current maintainer of the project is https://github.com/gotson[gotson].
+### VFS
 
-== Usage
+<p align="center">
+  <picture>
+    <img width="300" src="imgs/vfs.png">
+  </picture>
+</p>
 
-➡️ More usage examples and configuration are available in link:USAGE.md[USAGE.md]
+SQLite execution is backed by an in-memory **V**irtual **F**ile**S**ystem ([jimfs](https://github.com/google/jimfs)).
+This guarantees high degrees of safety as the SQLite WASM module never access directly the host FileSystem staying fully sandboxed until an explicit operation.
 
-SQLite JDBC is a library for accessing SQLite databases through the JDBC API. For the general usage of JDBC, see https://docs.oracle.com/javase/tutorial/jdbc/index.html[JDBC Tutorial] or https://www.oracle.com/technetwork/java/javase/tech/index-jsp-136101.html[Oracle JDBC Documentation].
+There are 3 operations that will affect the host FileSystem:
 
-. <<Download,Download>> `sqlite-jdbc-{project-version}.jar`
-then append this jar file into your classpath.
-. Open a SQLite database connection from your code. (see the example below)
+- `open`: copy the database file from the host disk to the in-memory VFS
+- `restore`: copy the database restore file from the host disk to the in-memory VFS
+- `backup`: copy the in-memory database to the host disk
 
-=== Example usage
+### Compilation flags
 
-Assuming `sqlite-jdbc-{project-version}.jar` is placed in the current directory.
+The compilation of SQLite to wasm impose some limitations:
 
-[source,shell,subs="attributes+"]
-----
-> javac Sample.java
-> java -classpath ".;sqlite-jdbc-{project-version}.jar" Sample   # in Windows
-or
-> java -classpath ".:sqlite-jdbc-{project-version}.jar" Sample   # in macOS or Linux
-name = leo
-id = 1
-name = yui
-id = 2
-----
+- WASM doesn't have proper thread/concurrency handling, hence `SQLITE_THREADSAFE=0` is used to compile, meaning that only single Thread access to a database is safe.
+- WAL is not enabled/supported
+- the deprecated Shared Cache is fully disabled
 
-=== Sample.java
+## Usage
 
-[source,java]
-----
-    import java.sql.Connection;
-    import java.sql.DriverManager;
-    import java.sql.ResultSet;
-    import java.sql.SQLException;
-    import java.sql.Statement;
+➡️ More usage examples and configuration are available in [USAGE.md](./USAGE.md)
 
-    public class Sample
-    {
-      public static void main(String[] args)
-      {
-        // NOTE: Connection and Statement are AutoCloseable.
-        //       Don't forget to close them both in order to avoid leaks.
-        try
-        (
-          // create a database connection
-          Connection connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
-          Statement statement = connection.createStatement();
-        )
-        {
-          statement.setQueryTimeout(30);  // set timeout to 30 sec.
+SQLite JDBC is a library for accessing SQLite databases through the JDBC API. For the general usage of JDBC, see [JDBC Tutorial](https://docs.oracle.com/javase/tutorial/jdbc/index.html) or [Oracle JDBC Documentation](https://www.oracle.com/technetwork/java/javase/tech/index-jsp-136101.html).
 
-          statement.executeUpdate("drop table if exists person");
-          statement.executeUpdate("create table person (id integer, name string)");
-          statement.executeUpdate("insert into person values(1, 'leo')");
-          statement.executeUpdate("insert into person values(2, 'yui')");
-          ResultSet rs = statement.executeQuery("select * from person");
-          while(rs.next())
-          {
-            // read the result set
-            System.out.println("name = " + rs.getString("name"));
-            System.out.println("id = " + rs.getInt("id"));
-          }
-        }
-        catch(SQLException e)
-        {
-          // if the error message is "out of memory",
-          // it probably means no database file is found
-          e.printStackTrace(System.err);
-        }
-      }
-    }
+### Install the library
 
-----
+With Maven add the SQLite4j library dependency:
 
-== How does SQLiteJDBC work?
+```xml
+<dependency>
+    <groupId>...</groupId>
+    <artifactId>???</artifactId>
+    <version>latest_release</version>
+</dependency>
+```
 
-Our SQLite JDBC driver package (i.e., `sqlite-jdbc-{project-version}.jar`) contains three
-types of native SQLite libraries (`sqlitejdbc.dll`, `sqlitejdbc.dylib`, `sqlitejdbc.so`),
-each of them is compiled for Windows, macOS and Linux. An appropriate native library
-file is automatically extracted into your OS's temporary folder, when your program
-loads `com.github.andreaTP.sqlite.wasm.JDBC` driver.
+### Use the library
 
-=== Supported Operating Systems
+Use the plain JDBC driver:
 
-Since sqlite-jdbc-3.6.19, the natively compiled SQLite engines will be used for
-the following operating systems:
+```java
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
-|===
-| |x86 |x86_64 |armv5 |armv6 |armv7 |arm64 |ppc64 | riscv64
+// NOTE: Connection and Statement are AutoCloseable.
+//       Don't forget to close them both in order to avoid leaks.
+try
+(
+  // create a database connection
+  Connection connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
+  Statement statement = connection.createStatement();
+)
+{
+  statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-|Windows |✔ |✔ | | |✔ |✔ | |
-|macOS | |✔ | | | |✔ | |
-|Linux (libc) |✔ |✔ |✔ |✔ |✔ |✔ |✔ |✔ 
-|Linux (musl) |✔ |✔ | | | |✔ | |
-|Android (API Level 24+) |✔ |✔ |✔ | | |✔ | |
-|FreeBSD |✔ |✔ | | | |✔ | |
-|===
+  statement.executeUpdate("drop table if exists person");
+  statement.executeUpdate("create table person (id integer, name string)");
+  statement.executeUpdate("insert into person values(1, 'leo')");
+  statement.executeUpdate("insert into person values(2, 'yui')");
+  ResultSet rs = statement.executeQuery("select * from person");
+  while(rs.next())
+  {
+    // read the result set
+    System.out.println("name = " + rs.getString("name"));
+    System.out.println("id = " + rs.getInt("id"));
+  }
+} catch(SQLException e) {
+  e.printStackTrace(System.err);
+}
+```
 
-In the other OSs not listed above, the pure-java SQLite is used. (Applies to versions before 3.7.15)
-
-If you want to use the native library for your OS, link:./CONTRIBUTING.md[build the source from scratch].
-
-=== GraalVM native-image support
-
-Sqlite JDBC supports https://www.graalvm.org/native-image/[GraalVM native-image] out of the box starting from version 3.40.1.0.
-There has been rudimentary support for some versions before that, but this was not actively tested by the CI.
-
-By default, the `sqlitejdbc` library for the compilation target will be included in the native image, accompanied by the required JNI configuration.
-At runtime, this library will be extracted to the temp folder and loaded from there.
-For faster startup however, it is recommended to set the `org.sqlite.lib.exportPath` property at build-time.
-This will export the `sqlitejdbc` library at build-time to the specified directory, and the library will not be included as a resource.
-As a result, the native image itself will be slightly smaller and the overhead of exporting the library at run-time is eliminated,
-but you need to make sure the library can be found at run-time.
-The best way to do this is to simply place the library next to the executable.
-
-==== CLI example
-
-[source,shell]
-----
-native-image -Dorg.sqlite.lib.exportPath=~/outDir -H:Path=~/outDir -cp foo.jar org.example.Main
-----
-
-This will place both the `sqlitejdbc` shared library and the native-image output in the `~/outDir` folder.
-
-=== Maven example
-
-This example uses the https://graalvm.github.io/native-build-tools/latest/index.html[native-build-tools] maven plugin:
-
-[source,xml]
-----
-<plugin>
-    <groupId>org.graalvm.buildtools</groupId>
-    <artifactId>native-maven-plugin</artifactId>
-    <configuration>
-        <buildArgs>
-            <buildArg>-Dorg.sqlite.lib.exportPath=${project.build.directory}</buildArg>
-        </buildArgs>
-    </configuration>
-</plugin>
-----
-
-This will automatically place the `sqlitejdbc` library in the `/target` folder of your project, creating a functional execution environment.
-When packaging the resulting app, simply include the library in the distribution bundle.
-
-== Download
-
-Download from https://search.maven.org/artifact/org.xerial/sqlite-jdbc[Maven Central] or from the https://github.com/xerial/sqlite-jdbc/releases[releases] page.
-
-[source,xml,subs="attributes+"]
-----
-<dependencies>
-    <dependency>
-      <groupId>org.xerial</groupId>
-      <artifactId>sqlite-jdbc</artifactId>
-      <version>{project-version}</version>
-    </dependency>
-</dependencies>
-----
-
-Snapshots of the development version are available in https://oss.sonatype.org/content/repositories/snapshots/org/xerial/sqlite-jdbc/[Sonatype's snapshots repository].
-
-=== Validating downloads
-
-Maven Central resources are signed using https://gnupg.org/[GPG] and the signature files, ending in .asc, are available in the same location as the other downloads. 
-
-The following key is currently used to sign releases:
-
----- 
-
------BEGIN PGP PUBLIC KEY BLOCK-----
-Comment: C1CB A75E C9BD 0BAF 8061  9354 59E0 5CE6 1818 7ED4
-Comment: Taro L. Saito (For GitHub Actions) <leo@xerial.org>
-
-xjMEYuRVGhYJKwYBBAHaRw8BAQdA2Dp4m1Yhtb1g94pQzzL24FuP6b9KXF8lP9Dh
-hZnynhfNM1Rhcm8gTC4gU2FpdG8gKEZvciBHaXRIdWIgQWN0aW9ucykgPGxlb0B4
-ZXJpYWwub3JnPsKUBBMWCgA8FiEEwcunXsm9C6+AYZNUWeBc5hgYftQFAmLkVRoC
-GwMFCwkIBwIDIgIBBhUKCQgLAgQWAgMBAh4HAheAAAoJEFngXOYYGH7UfPwBAK7x
-TVRebZeWcAwmGaMUsbg7SgJou8xnkhByObPLUC/4AQDPsZeYmi4KXyXPzmqhCicd
-Y+ZSJWIDQqitK2ujPDFXA844BGLkVRoSCisGAQQBl1UBBQEBB0Atu9kejBi+6wfO
-T0a9z/LYEEdNXM/VX6xt1onKToPPdQMBCAfCeAQYFgoAIBYhBMHLp17JvQuvgGGT
-VFngXOYYGH7UBQJi5FUaAhsMAAoJEFngXOYYGH7UlMABAKyRCazhVyUFg5FOpAnm
-ckBY38CaMGPPLXVyY8Kr6dYFAP9wYLu7nsDZCOXkAgS+et4Pk1WZCggoYUkxsX1o
-0KZXBQ==
-=Wyas
------END PGP PUBLIC KEY BLOCK-----
-
-----
-
-=== Project versioning explained
+### Project versioning explained
 
 The project's version follows the version of the SQLite library that is bundled in the jar, with an extra digit to denote the project's increment.
 
@@ -226,32 +120,21 @@ For example, if the SQLite version is `3.39.2`, the project version will be `3.3
 
 If the SQLite version is updated to `3.40.0`, the project version will be updated to `3.40.0.0`.
 
-=== Hint for maven-shade-plugin
+#### Hint for maven-shade-plugin
 
 You may need to add shade plugin transformer to solve `No suitable driver found for jdbc:sqlite:` issue.
 
-[source,xml]
-----
+```xml
 <transformer
 	implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
 	<resource>META-INF/services/java.sql.Driver</resource>
 </transformer>
-----
+```
 
-[source,xml,subs="attributes+"]
-----
+```xml
 <dependency>
     <groupId>org.xerial</groupId>
     <artifactId>sqlite-jdbc</artifactId>
     <version>{project-version}</version>
 </dependency>
-----
-
-== How can I help?
-
-We are always looking for:
-
-- *Reviewers* for issues or PRs, you can check image:https://img.shields.io/github/labels/xerial/sqlite-jdbc/review%20wanted[GitHub labels,link=https://github.com/xerial/sqlite-jdbc/labels/review%20wanted]
-- *Contributors* to submit PRs, you can check image:https://img.shields.io/github/labels/xerial/sqlite-jdbc/help%20wanted[GitHub labels,link=https://github.com/xerial/sqlite-jdbc/labels/help%20wanted] and image:https://img.shields.io/github/labels/xerial/sqlite-jdbc/good%20first%20issue[GitHub labels,link=https://github.com/xerial/sqlite-jdbc/labels/good%20first%20issue]
-
-Please read our link:./CONTRIBUTING.md[contribution] guide.
+```
