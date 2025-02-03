@@ -1,5 +1,12 @@
 # SQLite4j
 
+<p align="center">
+  <picture>
+    <img width="30%" src="imgs/SQLite4j_logo.png">
+  </picture>
+</p>
+
+
 This is a port of the awesome [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/) to run in pure Java with SQLite compiled to WASM thanks to [Chicory](https://github.com/dylibso/chicory).
 
 ## Why?
@@ -16,7 +23,7 @@ Among the main reasons:
 
 <p align="center">
   <picture>
-    <img width="400" src="imgs/sqlite-compilation.png">
+    <img width="80%" src="imgs/sqlite-compilation.png">
   </picture>
 </p>
 
@@ -35,7 +42,7 @@ You can mostly expect to have a bheavior equal to the original [xerial/sqlite-jd
 
 <p align="center">
   <picture>
-    <img width="300" src="imgs/vfs.png">
+    <img width="70%" src="imgs/vfs.png">
   </picture>
 </p>
 
@@ -68,9 +75,9 @@ With Maven add the SQLite4j library dependency:
 
 ```xml
 <dependency>
-    <groupId>...</groupId>
-    <artifactId>???</artifactId>
-    <version>latest_release</version>
+    <groupId>io.roastedroot</groupId>
+    <artifactId>sqlite4j</artifactId>
+    <version>{latest-release}</version>
 </dependency>
 ```
 
@@ -129,12 +136,4 @@ You may need to add shade plugin transformer to solve `No suitable driver found 
 	implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
 	<resource>META-INF/services/java.sql.Driver</resource>
 </transformer>
-```
-
-```xml
-<dependency>
-    <groupId>org.xerial</groupId>
-    <artifactId>sqlite-jdbc</artifactId>
-    <version>{project-version}</version>
-</dependency>
 ```
