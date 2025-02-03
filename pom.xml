@@ -2,12 +2,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.github.andreaTP.sqlite.wasm</groupId>
-    <artifactId>sqlite-jdbc-wasm</artifactId>
+    <groupId>io.roastedroot</groupId>
+    <artifactId>sqlite4j</artifactId>
     <version>3.48.0.0-SNAPSHOT</version>
-    <name>SQLite JDBC WASM</name>
+    <name>Pure Java SQLite JDBC Driver</name>
     <description>SQLite JDBC library running in Wasm thanks to Chicory</description>
-    <url>https://github.com/andreaTP/sqlite-jdbc-wasm</url>
+    <url>https://github.com/roastedroot/sqlite4j</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -142,15 +142,6 @@
             </plugin>
 
             <plugin>
-                <groupId>org.jreleaser</groupId>
-                <artifactId>jreleaser-maven-plugin</artifactId>
-                <version>1.16.0</version>
-                <configuration>
-                    <configFile>jreleaser.yml</configFile>
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.18.0</version>
@@ -205,7 +196,7 @@
                     <goal>wasm-aot-gen</goal>
                     </goals>
                     <configuration>
-                    <name>com.github.andreaTP.sqlite.wasm.SQLite</name>
+                    <name>io.roastedroot.sqlite4j.SQLite</name>
                     <wasmFile>${project.basedir}/wasm-lib/libsqlite3.wasm</wasmFile>
                     </configuration>
                 </execution>
@@ -216,9 +207,9 @@
     </build>
 
     <scm>
-        <connection>scm:git:git://github.com/andreaTP/sqlite-jdbc-wasm.git</connection>
-        <developerConnection>scm:git:git@github.com:andreaTP/sqlite-jdbc-wasm.git</developerConnection>
-        <url>https://github.com/andreaTP/sqlite-jdbc-wasm</url>
+        <connection>scm:git:git://github.com/roastedroot/sqlite4j.git</connection>
+        <developerConnection>scm:git:git@github.com:roastedroot/sqlite4j.git</developerConnection>
+        <url>https://github.com/roastedroot/sqlite4j</url>
     </scm>
 
     <distributionManagement>
