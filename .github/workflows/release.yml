@@ -61,7 +61,7 @@ jobs:
 
       - name: Release to Maven Central
         run: |
-          mvn --batch-mode deploy -Prelease -DskipTests=true -X
+          mvn --batch-mode deploy -Prelease -DskipTests=true
         env:
           MAVEN_USERNAME: ${{ secrets.central_username }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.central_password }}
