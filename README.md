@@ -137,3 +137,11 @@ You may need to add shade plugin transformer to solve `No suitable driver found 
 	<resource>META-INF/services/java.sql.Driver</resource>
 </transformer>
 ```
+
+# Thanks
+
+This project is building on the shoulders of giants. Special thanks to:
+
+- [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/) – the original JDBC driver
+- [ncruces/go-sqlite3](https://github.com/ncruces/go-sqlite3) – for prior work and invaluable help
+- [dylibso/chicory](https://github.com/dylibso/chicory) – for the AOT compiler to Java Bytecode
