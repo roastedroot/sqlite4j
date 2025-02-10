@@ -286,10 +286,15 @@ public abstract class SQLiteConnection implements Connection {
             }
         }
 
+        boolean isMemory =
+                fileName.isEmpty()
+                        || ":memory:".equals(fileName)
+                        || fileName.contains("mode=memory");
+
         // load the native DB
         DB db = null;
         try {
-            db = new WasmDB(fs, url, fileName, config);
+            db = new WasmDB(fs, url, fileName, config, isMemory);
         } catch (Exception e) {
             SQLException err = new SQLException("Error opening connection");
             err.initCause(e);

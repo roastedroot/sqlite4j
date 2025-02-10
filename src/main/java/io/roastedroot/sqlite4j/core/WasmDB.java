@@ -46,6 +46,7 @@ public class WasmDB extends DB implements WasmDBImports {
     private final WasiPreview1 wasiPreview1;
     private final WasmDBExports lib;
     private final FileSystem fs;
+    private final boolean isMemory;
 
     /** SQLite connection handle. */
     private int dbPtrPtr = 0;
@@ -55,10 +56,11 @@ public class WasmDB extends DB implements WasmDBImports {
     // Collations are dedicated per connection
     private CollationStore collationStore = new CollationStore();
 
-    public WasmDB(FileSystem fs, String url, String fileName, SQLiteConfig config)
+    public WasmDB(FileSystem fs, String url, String fileName, SQLiteConfig config, boolean isMemory)
             throws SQLException {
         super(url, fileName, config);
         this.fs = fs;
+        this.isMemory = isMemory;
 
         Path target = fs.getPath("/");
         WasiOptions wasiOpts =
@@ -276,37 +278,39 @@ public class WasmDB extends DB implements WasmDBImports {
 
     @Override
     protected synchronized void _open(String filename, int openFlags) throws SQLException {
-        Path origin = Path.of(filename);
-        Path dest = fs.getPath(filename);
-        if (!filename.isEmpty() && Files.notExists(dest)) {
-            // TODO: verify if everything works on windows
-            if (Files.exists(origin)) {
-                try (InputStream is = new FileInputStream(filename)) {
-                    Files.createDirectories(dest);
-                    java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
-                    var owner = Files.getOwner(origin);
-                    Files.setOwner(dest, owner);
-                    var permissions = Files.getPosixFilePermissions(origin);
-                    Files.setPosixFilePermissions(dest, permissions);
-                } catch (IOException e) {
-                    SQLException msg =
-                            DB.newSQLException(
-                                    SQLITE_CANTOPEN,
-                                    "Failed to map to memory the file: " + filename);
-                    throw new SQLException(msg.getMessage(), e);
-                }
-            } else {
-                // TODO: not sure why BusyHandler test fails if the database file doesn't exists
-                try {
-                    if (dest.getParent() != null) {
-                        Files.createDirectories(dest.getParent());
+        if (!isMemory) {
+            Path origin = Path.of(filename);
+            Path dest = fs.getPath(filename);
+            if (!filename.isEmpty() && Files.notExists(dest)) {
+                // TODO: verify if everything works on windows
+                if (Files.exists(origin)) {
+                    try (InputStream is = new FileInputStream(filename)) {
+                        Files.createDirectories(dest);
+                        java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+                        var owner = Files.getOwner(origin);
+                        Files.setOwner(dest, owner);
+                        var permissions = Files.getPosixFilePermissions(origin);
+                        Files.setPosixFilePermissions(dest, permissions);
+                    } catch (IOException e) {
+                        SQLException msg =
+                                DB.newSQLException(
+                                        SQLITE_CANTOPEN,
+                                        "Failed to map to memory the file: " + filename);
+                        throw new SQLException(msg.getMessage(), e);
                     }
-                } catch (IOException e) {
-                    SQLException msg =
-                            DB.newSQLException(
-                                    SQLITE_CANTOPEN,
-                                    "Failed to map to memory the file: " + filename);
-                    throw new SQLException(msg.getMessage(), e);
+                } else {
+                    // TODO: not sure why BusyHandler test fails if the database file doesn't exists
+                    try {
+                        if (dest.getParent() != null) {
+                            Files.createDirectories(dest.getParent());
+                        }
+                    } catch (IOException e) {
+                        SQLException msg =
+                                DB.newSQLException(
+                                        SQLITE_CANTOPEN,
+                                        "Failed to map to memory the file: " + filename);
+                        throw new SQLException(msg.getMessage(), e);
+                    }
                 }
             }
         }
