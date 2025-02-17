@@ -40,63 +40,61 @@ cp ${SCRIPT_DIR}/sqlite3_helpers.c ${SCRIPT_DIR}/sqlite-amalgamation/
 (
     cd ${SCRIPT_DIR}/sqlite-amalgamation
     ${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot \
-        --target=wasm32-wasi \
-        -o ../libsqlite3.wasm \
-        sqlite3.c sqlite3_helpers.c \
-        -Wl,--export-all \
-        -Wl,--import-undefined \
-        -Wl,--no-entry \
-		-Wl,--initial-memory=32768000 \
-        -Wl,--stack-first \
-		-Wl,--strip-debug \
-        -mnontrapping-fptoint -msign-ext \
-        -fno-stack-protector -fno-stack-clash-protection \
-        -mmutable-globals -mmultivalue \
-	    -mbulk-memory -mreference-types \
-        -mexec-model=reactor \
-        -g0 -Oz \
-		-DSQLITE_ENABLE_LOAD_EXTENSION=0 \
-	    -DSQLITE_HAVE_ISNAN=1 \
-	    -DHAVE_USLEEP=1 \
-	    -DSQLITE_ENABLE_COLUMN_METADATA \
-	    -DSQLITE_CORE \
-	    -DSQLITE_ENABLE_FTS3 \
-	    -DSQLITE_ENABLE_FTS3_PARENTHESIS \
-	    -DSQLITE_ENABLE_FTS5 \
-	    -DSQLITE_ENABLE_RTREE \
-	    -DSQLITE_ENABLE_STAT4 \
-	    -DSQLITE_ENABLE_DBSTAT_VTAB \
-	    -DSQLITE_ENABLE_MATH_FUNCTIONS \
-	    -DSQLITE_DEFAULT_MEMSTATUS=0 \
-	    -DSQLITE_DEFAULT_FILE_PERMISSIONS=0666 \
-	    -DSQLITE_MAX_VARIABLE_NUMBER=250000 \
-	    -DSQLITE_MAX_LENGTH=2147483647 \
-	    -DSQLITE_MAX_COLUMN=32767 \
-	    -DSQLITE_MAX_SQL_LENGTH=1073741824 \
-	    -DSQLITE_MAX_FUNCTION_ARG=127 \
-	    -DSQLITE_MAX_ATTACHED=125 \
-	    -DSQLITE_MAX_PAGE_COUNT=4294967294 \
-	    -DSQLITE_DISABLE_PAGECACHE_OVERFLOW_STATS \
-		-DSQLITE_USE_ALLOCA=0 \
-		-DSQLITE_4_BYTE_ALIGNED_MALLOC=1 \
-		-DSQLITE_32BIT_ROWID=1 \
-		-DSQLITE_DEFAULT_LOCKING_MODE=0 \
-		-DSQLITE_THREADSAFE=0 \
-		-DSQLITE_OMIT_SHARED_CACHE=1
+      --target=wasm32-wasi \
+      -o ../libsqlite3.wasm \
+      sqlite3.c sqlite3_helpers.c \
+      -Wl,--export-all \
+      -Wl,--import-undefined \
+      -Wl,--no-entry \
+      -Wl,--initial-memory=32768000 \
+      -Wl,--stack-first \
+      -Wl,--strip-debug \
+      -mnontrapping-fptoint -msign-ext \
+      -fno-stack-protector -fno-stack-clash-protection \
+      -mmutable-globals -mmultivalue \
+      -mbulk-memory -mreference-types \
+      -mexec-model=reactor \
+      -g0 -Oz \
+      -DSQLITE_ENABLE_LOAD_EXTENSION=0 \
+      -DSQLITE_HAVE_ISNAN=1 \
+      -DHAVE_USLEEP=1 \
+      -DSQLITE_ENABLE_COLUMN_METADATA \
+      -DSQLITE_CORE \
+      -DSQLITE_ENABLE_FTS3 \
+      -DSQLITE_ENABLE_FTS3_PARENTHESIS \
+      -DSQLITE_ENABLE_FTS5 \
+      -DSQLITE_ENABLE_RTREE \
+      -DSQLITE_ENABLE_STAT4 \
+      -DSQLITE_ENABLE_DBSTAT_VTAB \
+      -DSQLITE_ENABLE_MATH_FUNCTIONS \
+      -DSQLITE_DEFAULT_MEMSTATUS=0 \
+      -DSQLITE_DEFAULT_FILE_PERMISSIONS=0666 \
+      -DSQLITE_MAX_VARIABLE_NUMBER=250000 \
+      -DSQLITE_MAX_LENGTH=2147483647 \
+      -DSQLITE_MAX_COLUMN=32767 \
+      -DSQLITE_MAX_SQL_LENGTH=1073741824 \
+      -DSQLITE_MAX_FUNCTION_ARG=127 \
+      -DSQLITE_MAX_ATTACHED=125 \
+      -DSQLITE_MAX_PAGE_COUNT=4294967294 \
+      -DSQLITE_DISABLE_PAGECACHE_OVERFLOW_STATS \
+      -DSQLITE_USE_ALLOCA=0 \
+      -DSQLITE_4_BYTE_ALIGNED_MALLOC=1 \
+      -DSQLITE_32BIT_ROWID=1 \
+      -DSQLITE_DEFAULT_LOCKING_MODE=0 \
+      -DSQLITE_THREADSAFE=0 \
+      -DSQLITE_OMIT_SHARED_CACHE=1
 
+    # -DSQLITE_OMIT_WAL=0 \
+    # this shows more errors on varous tests -> is it useful to include?
+    # -DSQLITE_MEMDEBUG=1
 
-		# -DSQLITE_OMIT_WAL=0 \
-		# this shows more errors on varous tests -> is it useful to include?
-		# -DSQLITE_MEMDEBUG=1
-
-		# Use ALLOCA is an experiment, verify
-		# SQLITE_OMIT_LOAD_EXTENSION -> doesn't seems to be used in the WASI build
-		# Options that would not work on Wasm
+    # Use ALLOCA is an experiment, verify
+    # SQLITE_OMIT_LOAD_EXTENSION -> doesn't seems to be used in the WASI build
+    # Options that would not work on Wasm
         # -DSQLITE_MAX_MMAP_SIZE=1099511627776 \
         # -DSQLITE_THREADSAFE=1 \
 )
 
-# 
 # This step seems not needed after using "-Wl,--strip-debug"
 # 866873 libsqlite3-opt.wasm
 # 864174 libsqlite3.wasm
