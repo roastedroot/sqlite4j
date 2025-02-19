@@ -29,6 +29,7 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -1261,5 +1262,23 @@ public class SQLiteConfig {
 
     public void setGetGeneratedKeys(boolean generatedKeys) {
         this.defaultConnectionConfig.setGetGeneratedKeys(generatedKeys);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SQLiteConfig)) return false;
+        SQLiteConfig that = (SQLiteConfig) o;
+        return openModeFlag == that.openModeFlag
+                && busyTimeout == that.busyTimeout
+                && explicitReadOnly == that.explicitReadOnly
+                && Objects.equals(pragmaTable, that.pragmaTable)
+                && Objects.equals(defaultConnectionConfig, that.defaultConnectionConfig);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                pragmaTable, openModeFlag, busyTimeout, explicitReadOnly, defaultConnectionConfig);
     }
 }

@@ -55,6 +55,31 @@ There are 3 operations that will affect the host FileSystem:
 - `restore`: copy the database restore file from the host disk to the in-memory VFS
 - `backup`: copy the in-memory database to the host disk
 
+### Database Instances
+
+When using in-memory databases (e.g., `jdbc:sqlite::memory:`), a new instance of SQLite is created each time a new connection is opened. Therefore, when using a connection pool, we recommend setting both the minimum and maximum pool size to `1` to ensure consistency.  
+
+For example: 
+
+```
+datasource.jdbc.min-size=1
+datasource.jdbc.max-size=1
+```
+
+For filesystem-backed databases, this behavior does not apply as long as at least one connection remains open:
+
+```
+datasource.jdbc.min-size=1
+```
+
+Whenever possible, we recommend using filesystem-backed databases. These databases are loaded into the Virtual File System (VFS) upon the first `connection.open` and remain consistent across connections.  
+
+One way to achieve this is by loading an empty resource from the classpath. For example:  
+
+```
+datasource.jdbc.url=jdbc:sqlite:resource:sample.db
+```
+
 ### Compilation flags
 
 The compilation of SQLite to wasm impose some limitations:

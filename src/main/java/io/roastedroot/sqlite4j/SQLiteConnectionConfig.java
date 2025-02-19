@@ -6,6 +6,7 @@ import io.roastedroot.sqlite4j.date.FastDateFormat;
 import java.sql.Connection;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 /** Connection local configurations */
@@ -150,5 +151,33 @@ public class SQLiteConnectionConfig implements Cloneable {
 
     String transactionPrefix() {
         return beginCommandMap.get(transactionMode);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SQLiteConnectionConfig)) return false;
+        SQLiteConnectionConfig that = (SQLiteConnectionConfig) o;
+        return transactionIsolation == that.transactionIsolation
+                && autoCommit == that.autoCommit
+                && getGeneratedKeys == that.getGeneratedKeys
+                && dateClass == that.dateClass
+                && datePrecision == that.datePrecision
+                && Objects.equals(dateStringFormat, that.dateStringFormat)
+                && Objects.equals(dateFormat, that.dateFormat)
+                && transactionMode == that.transactionMode;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                dateClass,
+                datePrecision,
+                dateStringFormat,
+                dateFormat,
+                transactionIsolation,
+                transactionMode,
+                autoCommit,
+                getGeneratedKeys);
     }
 }
