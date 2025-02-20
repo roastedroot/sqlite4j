@@ -1,11 +1,10 @@
 package io.roastedroot.sqlite4j;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import io.roastedroot.sqlite4j.SQLiteConfig.TransactionMode;
 import io.roastedroot.sqlite4j.core.CoreDatabaseMetaData;
 import io.roastedroot.sqlite4j.core.DB;
 import io.roastedroot.sqlite4j.core.WasmDB;
+import io.roastedroot.sqlite4j.core.WasmDBFactory;
 import io.roastedroot.sqlite4j.jdbc4.JDBC4DatabaseMetaData;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
@@ -35,10 +33,7 @@ public abstract class SQLiteConnection implements Connection {
     private TransactionMode currentTransactionMode;
     private boolean firstStatementExecuted = false;
 
-    // One single filesystem for all connections
-    // is always needed for backup and restores ...
-    private static final FileSystem fs =
-            Jimfs.newFileSystem(Configuration.unix().toBuilder().setAttributeViews("unix").build());
+    private static final WasmDBFactory cache = new WasmDBFactory();
 
     /**
      * Connection constructor for reusing an existing DB handle
@@ -294,7 +289,7 @@ public abstract class SQLiteConnection implements Connection {
         // load the native DB
         DB db = null;
         try {
-            db = new WasmDB(fs, url, fileName, config, isMemory);
+            db = cache.create(url, fileName, config, isMemory);
         } catch (Exception e) {
             SQLException err = new SQLException("Error opening connection");
             err.initCause(e);
@@ -439,17 +434,7 @@ public abstract class SQLiteConnection implements Connection {
         if (isClosed()) return;
         if (meta != null) meta.close();
 
-        // TODO: how to clean this up? Only when there are no more DBs around?
-        // We should never close the FileSystem as other connections might be using it ...
-        //        if (fs != null) {
-        //            try {
-        //                fs.close();
-        //            } catch (IOException e) {
-        //                throw new RuntimeException(e);
-        //            }
-        //        }
-
-        db.close();
+        cache.close((WasmDB) db);
     }
 
     /**

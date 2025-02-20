@@ -27,6 +27,7 @@ import io.roastedroot.sqlite4j.SQLiteUpdateListener;
 import java.sql.BatchUpdateException;
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1264,4 +1265,23 @@ public abstract class DB implements Codes {
     public abstract byte[] serialize(String schema) throws SQLException;
 
     public abstract void deserialize(String schema, byte[] buff) throws SQLException;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DB)) return false;
+        DB db = (DB) o;
+        return Objects.equals(url, db.url)
+                && Objects.equals(fileName, db.fileName)
+                && Objects.equals(config, db.config);
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode(url, fileName, config);
+    }
+
+    public static int hashCode(String url, String fileName, SQLiteConfig config) {
+        return Objects.hash(url, fileName, config);
+    }
 }
