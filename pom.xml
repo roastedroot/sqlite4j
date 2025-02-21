@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.11.4</junit.version>
         <surefire.version>3.5.2</surefire.version>
-        <chicory.version>1.0.0</chicory.version>
+        <chicory.version>1.1.0</chicory.version>
     </properties>
 
     <licenses>
