@@ -3,6 +3,7 @@ package io.roastedroot.sqlite4j.core;
 import static io.roastedroot.sqlite4j.core.wasm.WasmDBExports.SQLITE_SERIALIZE_NOCOPY;
 import static io.roastedroot.sqlite4j.core.wasm.WasmDBExports.SQLITE_UTF8;
 
+import com.dylibso.chicory.runtime.ByteArrayMemory;
 import com.dylibso.chicory.runtime.ImportValues;
 import com.dylibso.chicory.runtime.Instance;
 import com.dylibso.chicory.runtime.Memory;
@@ -73,6 +74,7 @@ public class WasmDB extends DB implements WasmDBImports {
         instance =
                 Instance.builder(MODULE)
                         .withMachineFactory(SQLiteModule::create)
+                        .withMemoryFactory(ByteArrayMemory::new)
                         .withImportValues(
                                 ImportValues.builder()
                                         .addFunction(wasiPreview1.toHostFunctions())
