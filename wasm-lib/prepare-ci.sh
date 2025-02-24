@@ -9,10 +9,10 @@ mv wasi-sdk-25.0-x86_64-linux wasi-sdk
 rm wasi-sdk-25.0-x86_64-linux.tar.gz
 
 rm -rf sqlite-amalgamation
-wget https://www.sqlite.org/2025/sqlite-amalgamation-3480000.zip
-unzip sqlite-amalgamation-3480000.zip
-mv sqlite-amalgamation-3480000 sqlite-amalgamation
-rm sqlite-amalgamation-3480000.zip
+wget https://www.sqlite.org/2025/sqlite-amalgamation-3490100.zip
+unzip sqlite-amalgamation-3490100.zip
+mv sqlite-amalgamation-3490100 sqlite-amalgamation
+rm sqlite-amalgamation-3490100.zip
 
 rm -rf binaryen
 wget https://github.com/WebAssembly/binaryen/releases/download/version_121/binaryen-version_121-x86_64-linux.tar.gz
