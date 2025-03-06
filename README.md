@@ -55,6 +55,18 @@ There are 3 operations that will affect the host FileSystem:
 - `restore`: copy the database restore file from the host disk to the in-memory VFS
 - `backup`: copy the in-memory database to the host disk
 
+If you want the database changes to be reflected to the file on the disk you can write a job that uses the `backup` functionality to update the file system:
+
+```java
+try (var conn = dataSource.getConnection();
+     var stmt = conn.createStatement()) {
+  // Execute the backup to a separate file
+  stmt.executeUpdate("backup to " + backupDbFilePath);
+  // Atomically substitute the DB file with its backup
+  Files.move(backupDbFilePath, originalDbFilePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+}
+```
+
 ### Database Instances
 
 When using in-memory databases (e.g., `jdbc:sqlite::memory:`), a new instance of SQLite is created each time a new connection is opened. Therefore, when using a connection pool, we recommend setting both the minimum and maximum pool size to `1` to ensure consistency.  
