@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
 
 # When a new revision is pushed to a PR, cancel all in-progress CI runs for that
 # PR. See https://docs.github.com/en/actions/using-jobs/using-concurrency
@@ -26,6 +26,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Set up Java
       uses: actions/setup-java@v4
