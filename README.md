@@ -46,7 +46,7 @@ You can mostly expect to have a bheavior equal to the original [xerial/sqlite-jd
   </picture>
 </p>
 
-SQLite execution is backed by an in-memory **V**irtual **F**ile**S**ystem ([jimfs](https://github.com/google/jimfs)).
+SQLite execution is backed by an in-memory **V**irtual **F**ile**S**ystem ([ZeroFs](https://github.com/roastedroot/zerofs)).
 This guarantees high degrees of safety as the SQLite WASM module never access directly the host FileSystem staying fully sandboxed until an explicit operation.
 
 There are 3 operations that will affect the host FileSystem:
