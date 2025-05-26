@@ -1,8 +1,8 @@
 package io.roastedroot.sqlite4j.core;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import io.roastedroot.sqlite4j.SQLiteConfig;
+import io.roastedroot.zerofs.Configuration;
+import io.roastedroot.zerofs.ZeroFs;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.sql.SQLException;
@@ -21,7 +21,7 @@ public class WasmDBFactory {
         // lazily initialized at the opening of the first connection
         if (fs == null) {
             fs =
-                    Jimfs.newFileSystem(
+                    ZeroFs.newFileSystem(
                             Configuration.unix().toBuilder().setAttributeViews("unix").build());
         }
 
