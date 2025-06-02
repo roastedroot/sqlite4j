@@ -30,7 +30,7 @@ Among the main reasons:
 There are a few steps to achieve the result:
 
   - compile SQLite to [WebAssembly](https://webassembly.org/)
-  - translate the SQLite payload to pure Java bytecode using [Chicory AOT](https://chicory.dev/docs/experimental/aot)
+  - translate the SQLite payload to pure Java bytecode using [Chicory Compiler](https://chicory.dev/docs/usage/build-time-compiler)
   - run SQLite similarly to how it's done using JNI in the original JDBC dirver, but all in pure Java
   - ship an extremely small and self contained `jar` that can run wherever the JVM can go!
 
@@ -181,4 +181,4 @@ This project is building on the shoulders of giants. Special thanks to:
 
 - [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/) – the original JDBC driver
 - [ncruces/go-sqlite3](https://github.com/ncruces/go-sqlite3) – for prior work and invaluable help
-- [dylibso/chicory](https://github.com/dylibso/chicory) – for the AOT compiler to Java Bytecode
+- [dylibso/chicory](https://github.com/dylibso/chicory) – for the Wasm compiler to Java Bytecode
