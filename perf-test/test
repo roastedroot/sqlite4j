@@ -1,6 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 
-//DEPS io.roastedroot:sqlite4j:3.48.0.0
+//DEPS io.roastedroot:sqlite4j:9.9.9.9-SNAPSHOT
 
 import static java.lang.System.*;
 
