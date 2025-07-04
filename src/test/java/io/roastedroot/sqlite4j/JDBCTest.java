@@ -11,7 +11,6 @@ package io.roastedroot.sqlite4j;
 
 import static org.assertj.core.api.Assertions.*;
 
-import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -187,8 +186,7 @@ public class JDBCTest {
     @Test
     public void jdbcHammer() throws Exception {
         final SQLiteDataSource dataSource = createDatasourceWithExplicitReadonly();
-        File tempFile = File.createTempFile("myTestDB", ".db");
-        dataSource.setUrl("jdbc:sqlite:" + tempFile.getAbsolutePath());
+        dataSource.setUrl("jdbc:sqlite:test.db");
         Connection initConnection = dataSource.getConnection();
         initConnection.setAutoCommit(false);
         try (Statement stmt = initConnection.createStatement()) {
