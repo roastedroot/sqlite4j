@@ -188,7 +188,7 @@ public class JDBCTest {
     @Test
     public void jdbcHammer(@TempDir File tempDir) throws Exception {
         final SQLiteDataSource dataSource = createDatasourceWithExplicitReadonly();
-        File tempFile = File.createTempFile("myTestDB", ".db", tempDir);
+        File tempFile = File.createTempFile("myTestDB", ".db");
         dataSource.setUrl("jdbc:sqlite:" + tempFile.getAbsolutePath());
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
