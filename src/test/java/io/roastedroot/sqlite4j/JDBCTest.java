@@ -19,7 +19,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 public class JDBCTest {
     @Test
@@ -186,7 +185,7 @@ public class JDBCTest {
     void name() {}
 
     @Test
-    public void jdbcHammer(@TempDir File tempDir) throws Exception {
+    public void jdbcHammer() throws Exception {
         final SQLiteDataSource dataSource = createDatasourceWithExplicitReadonly();
         File tempFile = File.createTempFile("myTestDB", ".db");
         dataSource.setUrl("jdbc:sqlite:" + tempFile.getAbsolutePath());
