@@ -188,23 +188,15 @@ public class JDBCTest {
     @Test
     public void jdbcHammer(@TempDir File tempDir) throws Exception {
         final SQLiteDataSource dataSource = createDatasourceWithExplicitReadonly();
-        File tempFile = File.createTempFile("myTestDB", ".db");
+        File tempFile = File.createTempFile("myTestDB", ".db", tempDir);
         dataSource.setUrl("jdbc:sqlite:" + tempFile.getAbsolutePath());
-        try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false);
-            try (Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate("CREATE TABLE TestTable(ID INT, testval INT, PRIMARY KEY(ID));");
-                stmt.executeUpdate("INSERT INTO TestTable (ID, testval) VALUES(1, 0);");
-            }
-            connection.commit();
+        Connection initConnection = dataSource.getConnection();
+        initConnection.setAutoCommit(false);
+        try (Statement stmt = initConnection.createStatement()) {
+            stmt.executeUpdate("CREATE TABLE TestTable(ID INT, testval INT, PRIMARY KEY(ID));");
+            stmt.executeUpdate("INSERT INTO TestTable (ID, testval) VALUES(1, 0);");
         }
-        try (Connection connection = dataSource.getConnection()) {
-            connection.setReadOnly(true);
-            try (Statement statement = connection.createStatement()) {
-                ResultSet rs = statement.executeQuery("SELECT * FROM TestTable");
-                rs.close();
-            }
-        }
+        initConnection.commit();
 
         final AtomicInteger count = new AtomicInteger();
         List<Thread> threads = new ArrayList<>();
@@ -277,6 +269,8 @@ public class JDBCTest {
             }
             connection2.commit();
         }
+
+        initConnection.close();
     }
 
     // helper methods -----------------------------------------------------------------
