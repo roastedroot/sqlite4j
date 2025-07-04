@@ -11,7 +11,6 @@ package io.roastedroot.sqlite4j;
 
 import static org.assertj.core.api.Assertions.*;
 
-import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +18,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 public class JDBCTest {
     @Test
@@ -186,18 +184,16 @@ public class JDBCTest {
     void name() {}
 
     @Test
-    public void jdbcHammer(@TempDir File tempDir) throws Exception {
+    public void jdbcHammer() throws Exception {
         final SQLiteDataSource dataSource = createDatasourceWithExplicitReadonly();
-        File tempFile = File.createTempFile("myTestDB", ".db", tempDir);
-        dataSource.setUrl("jdbc:sqlite:" + tempFile.getAbsolutePath());
-        try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false);
-            try (Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate("CREATE TABLE TestTable(ID INT, testval INT, PRIMARY KEY(ID));");
-                stmt.executeUpdate("INSERT INTO TestTable (ID, testval) VALUES(1, 0);");
-            }
-            connection.commit();
+        dataSource.setUrl("jdbc:sqlite:test.db");
+        Connection initConnection = dataSource.getConnection();
+        initConnection.setAutoCommit(false);
+        try (Statement stmt = initConnection.createStatement()) {
+            stmt.executeUpdate("CREATE TABLE TestTable(ID INT, testval INT, PRIMARY KEY(ID));");
+            stmt.executeUpdate("INSERT INTO TestTable (ID, testval) VALUES(1, 0);");
         }
+        initConnection.commit();
 
         final AtomicInteger count = new AtomicInteger();
         List<Thread> threads = new ArrayList<>();
@@ -270,6 +266,8 @@ public class JDBCTest {
             }
             connection2.commit();
         }
+
+        initConnection.close();
     }
 
     // helper methods -----------------------------------------------------------------
