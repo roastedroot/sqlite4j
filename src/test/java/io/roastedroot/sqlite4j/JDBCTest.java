@@ -190,13 +190,21 @@ public class JDBCTest {
         final SQLiteDataSource dataSource = createDatasourceWithExplicitReadonly();
         File tempFile = File.createTempFile("myTestDB", ".db", tempDir);
         dataSource.setUrl("jdbc:sqlite:" + tempFile.getAbsolutePath());
-        Connection firstConnection = dataSource.getConnection();
-        firstConnection.setAutoCommit(false);
-        try (Statement stmt = firstConnection.createStatement()) {
-            stmt.executeUpdate("CREATE TABLE TestTable(ID INT, testval INT, PRIMARY KEY(ID));");
-            stmt.executeUpdate("INSERT INTO TestTable (ID, testval) VALUES(1, 0);");
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            try (Statement stmt = connection.createStatement()) {
+                stmt.executeUpdate("CREATE TABLE TestTable(ID INT, testval INT, PRIMARY KEY(ID));");
+                stmt.executeUpdate("INSERT INTO TestTable (ID, testval) VALUES(1, 0);");
+            }
+            connection.commit();
         }
-        firstConnection.commit();
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setReadOnly(true);
+            try (Statement statement = connection.createStatement()) {
+                ResultSet rs = statement.executeQuery("SELECT * FROM TestTable");
+                rs.close();
+            }
+        }
 
         final AtomicInteger count = new AtomicInteger();
         List<Thread> threads = new ArrayList<>();
@@ -269,8 +277,6 @@ public class JDBCTest {
             }
             connection2.commit();
         }
-
-        firstConnection.close();
     }
 
     // helper methods -----------------------------------------------------------------
