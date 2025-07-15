@@ -284,7 +284,16 @@ public class WasmDB extends DB implements WasmDBImports {
             Path origin = Path.of(filename);
             Path dest = fs.getPath(filename);
             if (!filename.isEmpty() && Files.notExists(dest)) {
-                // TODO: verify if everything works on windows
+                if (!Files.exists(origin) && (openFlags & SQLITE_OPEN_CREATE) != 0) {
+                    try {
+                        Files.createFile(origin);
+                    } catch (IOException e) {
+                        SQLException msg =
+                                DB.newSQLException(
+                                        SQLITE_CANTOPEN, "Failed to create db file: " + filename);
+                        throw new SQLException(msg.getMessage(), e);
+                    }
+                }
                 if (Files.exists(origin)) {
                     try (InputStream is = new FileInputStream(filename)) {
                         Files.createDirectories(dest);
@@ -301,18 +310,10 @@ public class WasmDB extends DB implements WasmDBImports {
                         throw new SQLException(msg.getMessage(), e);
                     }
                 } else {
-                    // TODO: not sure why BusyHandler test fails if the database file doesn't exists
-                    try {
-                        if (dest.getParent() != null) {
-                            Files.createDirectories(dest.getParent());
-                        }
-                    } catch (IOException e) {
-                        SQLException msg =
-                                DB.newSQLException(
-                                        SQLITE_CANTOPEN,
-                                        "Failed to map to memory the file: " + filename);
-                        throw new SQLException(msg.getMessage(), e);
-                    }
+                    SQLException msg =
+                            DB.newSQLException(
+                                    SQLITE_CANTOPEN, "Database file doesn't exists: " + filename);
+                    throw new SQLException(msg.getMessage());
                 }
             }
         }

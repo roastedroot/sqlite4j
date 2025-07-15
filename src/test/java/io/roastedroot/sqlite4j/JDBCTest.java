@@ -11,6 +11,8 @@ package io.roastedroot.sqlite4j;
 
 import static org.assertj.core.api.Assertions.*;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -268,6 +270,7 @@ public class JDBCTest {
         }
 
         initConnection.close();
+        Files.deleteIfExists(Path.of("test.db"));
     }
 
     // helper methods -----------------------------------------------------------------
