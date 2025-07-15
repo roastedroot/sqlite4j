@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -337,7 +339,7 @@ public class ConnectionTest {
     public void ignoreUnknownParametersInURI() throws Exception {
         Connection conn =
                 DriverManager.getConnection(
-                        "jdbc:sqlite:file::memory:?cache=shared&foreign_keys=ON&debug=&invalid");
+                        "jdbc:sqlite::memory:?mode=memory&cache=shared&foreign_keys=ON&debug=&invalid");
         Statement stat = conn.createStatement();
 
         ResultSet rs = stat.executeQuery("pragma foreign_keys");
@@ -424,5 +426,47 @@ public class ConnectionTest {
 
         stat.close();
         conn.close();
+    }
+
+    @Test
+    public void correctlyOpenDatabase() throws Exception {
+        // succeed
+        assertThatNoException()
+                .isThrownBy(
+                        () ->
+                                DriverManager.getConnection(String.format("jdbc:sqlite:sample1.db"))
+                                        .close());
+        Files.deleteIfExists(Path.of("sample1.db"));
+    }
+
+    @Test
+    public void failsOpenDatabaseNoCreateInConfig() throws Exception {
+        var config = new SQLiteConfig();
+        config.resetOpenMode(SQLiteOpenMode.CREATE);
+
+        assertThatThrownBy(
+                        () ->
+                                DriverManager.getConnection(
+                                        String.format("jdbc:sqlite:sample2.db"),
+                                        config.toProperties()))
+                .hasMessageContaining("Database file doesn't exists");
+    }
+
+    @Test
+    public void failsOpenDatabaseNoCreateInConnectionString() throws Exception {
+        assertThatThrownBy(
+                        () ->
+                                DriverManager.getConnection(
+                                        String.format("jdbc:sqlite:sample3.db?open_mode=0")))
+                .hasMessageContaining("Database file doesn't exists");
+    }
+
+    @Test
+    public void failsOpenDatabaseNoCreateUnavailablePath() throws Exception {
+        assertThatThrownBy(
+                        () ->
+                                DriverManager.getConnection(
+                                        String.format("jdbc:sqlite:/NON-EXISTENT9123/sample4.db")))
+                .hasMessageContaining("does not exist");
     }
 }
