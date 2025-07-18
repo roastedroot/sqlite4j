@@ -467,6 +467,19 @@ public class ConnectionTest {
                         () ->
                                 DriverManager.getConnection(
                                         String.format("jdbc:sqlite:/NON-EXISTENT9123/sample4.db")))
-                .hasMessageContaining("does not exist");
+                .hasMessageContaining("Failed to create db file");
+    }
+
+    @Test
+    public void correctlyOpenDatabaseCreatingParentFolders() throws Exception {
+        // succeed
+        assertThatNoException()
+                .isThrownBy(
+                        () ->
+                                DriverManager.getConnection(
+                                                String.format(
+                                                        "jdbc:sqlite:./my-example/sample5.db"))
+                                        .close());
+        Files.deleteIfExists(Path.of("./my-example/sample5.db"));
     }
 }
