@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.roastedroot</groupId>
     <artifactId>sqlite4j</artifactId>
-    <version>9.9.9.9-SNAPSHOT</version>
+    <version>3.50.2.1</version>
     <name>Pure Java SQLite JDBC Driver</name>
     <description>SQLite JDBC library running in Wasm thanks to Chicory</description>
     <url>https://github.com/roastedroot/sqlite4j</url>
