@@ -36,7 +36,7 @@ There are a few steps to achieve the result:
 
 ## Design Decisions
 
-You can mostly expect to have a bheavior equal to the original [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/), there are, although, some notable differences due to the different nature of WASM.
+You can mostly expect to have a behavior equal to the original [xerial/sqlite-jdbc](https://github.com/xerial/sqlite-jdbc/), there are, although, some notable differences due to the different nature of WASM.
 
 ### VFS
 
@@ -47,7 +47,7 @@ You can mostly expect to have a bheavior equal to the original [xerial/sqlite-jd
 </p>
 
 SQLite execution is backed by an in-memory **V**irtual **F**ile**S**ystem ([ZeroFs](https://github.com/roastedroot/zerofs)).
-This guarantees high degrees of safety as the SQLite WASM module never access directly the host FileSystem staying fully sandboxed until an explicit operation.
+This guarantees high degrees of safety as the SQLite WASM module never accesses directly the host FileSystem staying fully sandboxed until an explicit operation.
 
 There are 3 operations that will affect the host FileSystem:
 
