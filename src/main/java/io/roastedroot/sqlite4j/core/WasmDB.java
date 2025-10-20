@@ -845,6 +845,8 @@ public class WasmDB extends DB implements WasmDBImports {
             java.nio.file.Files.copy(dest, realDiskDest, StandardCopyOption.REPLACE_EXISTING);
             Files.deleteIfExists(dest);
         } catch (IOException e) {
+            // TODO: remove me debug in CI
+            e.printStackTrace();
             throw new SQLiteException(
                     "failed to map to in-memory VFS " + e.getMessage(),
                     SQLiteErrorCode.SQLITE_ERROR);
