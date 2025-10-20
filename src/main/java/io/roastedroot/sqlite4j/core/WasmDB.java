@@ -303,8 +303,12 @@ public class WasmDB extends DB implements WasmDBImports {
                         java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
                         var owner = Files.getOwner(origin);
                         Files.setOwner(dest, owner);
-                        var permissions = Files.getPosixFilePermissions(origin);
-                        Files.setPosixFilePermissions(dest, permissions);
+                        try {
+                            var permissions = Files.getPosixFilePermissions(origin);
+                            Files.setPosixFilePermissions(dest, permissions);
+                        } catch (UnsupportedOperationException e) {
+                            // on win: ignore
+                        }
                     } catch (IOException e) {
                         SQLException msg =
                                 DB.newSQLException(
