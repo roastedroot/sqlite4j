@@ -842,6 +842,9 @@ public class WasmDB extends DB implements WasmDBImports {
         // and now copy the backup file from the VFS to the real disk
         Path realDiskDest = Path.of(destFileName);
         try {
+            if (realDiskDest.getParent() != null) {
+                Files.createDirectories(realDiskDest.getParent());
+            }
             java.nio.file.Files.copy(dest, realDiskDest, StandardCopyOption.REPLACE_EXISTING);
             Files.deleteIfExists(dest);
         } catch (IOException e) {
