@@ -849,6 +849,9 @@ public class WasmDB extends DB implements WasmDBImports {
             Files.deleteIfExists(dest);
         } catch (IOException e) {
             // TODO: remove me debug in CI
+            System.err.println("destFileName: " + destFileName);
+            System.err.println("dest: " + dest.toAbsolutePath());
+
             e.printStackTrace();
             throw new SQLiteException(
                     "failed to map to in-memory VFS " + e.getMessage(),
