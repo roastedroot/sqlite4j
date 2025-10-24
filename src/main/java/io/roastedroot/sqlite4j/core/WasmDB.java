@@ -280,13 +280,17 @@ public class WasmDB extends DB implements WasmDBImports {
 
     @Override
     protected synchronized void _open(String filename, int openFlags) throws SQLException {
+        // Convert Windows path to POSIX-style path for in-memory filesystem
+        String posixFilename = convertToPosixPath(filename);
         if (!isMemory) {
             Path origin = Path.of(filename);
-            Path dest = fs.getPath(filename);
+            Path dest = fs.getPath(posixFilename);
             if (!filename.isEmpty() && Files.notExists(dest)) {
                 if (!Files.exists(origin) && (openFlags & SQLITE_OPEN_CREATE) != 0) {
                     try {
-                        Files.createDirectories(origin.getParent());
+                        if (origin.getParent() != null) {
+                            Files.createDirectories(origin.getParent());
+                        }
                         Files.createFile(origin);
                     } catch (IOException e) {
                         SQLException msg =
@@ -301,8 +305,12 @@ public class WasmDB extends DB implements WasmDBImports {
                         java.nio.file.Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
                         var owner = Files.getOwner(origin);
                         Files.setOwner(dest, owner);
-                        var permissions = Files.getPosixFilePermissions(origin);
-                        Files.setPosixFilePermissions(dest, permissions);
+                        try {
+                            var permissions = Files.getPosixFilePermissions(origin);
+                            Files.setPosixFilePermissions(dest, permissions);
+                        } catch (UnsupportedOperationException e) {
+                            // on win: ignore
+                        }
                     } catch (IOException e) {
                         SQLException msg =
                                 DB.newSQLException(
@@ -320,7 +328,9 @@ public class WasmDB extends DB implements WasmDBImports {
         }
 
         this.dbPtrPtr = lib.malloc(PTR_SIZE);
-        int dbNamePtr = lib.allocCString(filename);
+        // Use the converted filename for SQLite open call in the in-memory filesystem
+        String sqliteFilename = isMemory ? filename : posixFilename;
+        int dbNamePtr = lib.allocCString(sqliteFilename);
 
         int res = lib.openV2(dbNamePtr, dbPtrPtr, openFlags, 0);
         this.dbPtr = instance.memory().readInt(this.dbPtrPtr);
@@ -740,6 +750,35 @@ public class WasmDB extends DB implements WasmDBImports {
     private static final int DEFAULT_BACKUP_NUM_BUSY_BEFORE_FAIL = 3;
     private static final int DEFAULT_PAGES_PER_BACKUP_STEP = 100;
 
+    /**
+     * Converts a Windows-style path to a POSIX-style path suitable for the in-memory filesystem.
+     * This handles Windows drive letters and backslashes by converting them to a valid POSIX path.
+     *
+     * @param windowsPath The Windows-style path (e.g., "C:\Users\file.txt")
+     * @return A POSIX-style path (e.g., "/c/Users/file.txt")
+     */
+    private static String convertToPosixPath(String windowsPath) {
+        if (windowsPath == null || windowsPath.isEmpty()) {
+            return windowsPath;
+        }
+
+        // If it's already a POSIX-style path (starts with /), don't convert it
+        if (windowsPath.startsWith("/")) {
+            return windowsPath;
+        }
+
+        // Handle Windows drive letters (e.g., "C:\" -> "/c/")
+        if (windowsPath.length() >= 2 && windowsPath.charAt(1) == ':') {
+            char drive = Character.toLowerCase(windowsPath.charAt(0));
+            if (drive >= 'a' && drive <= 'z') {
+                windowsPath = "/" + drive + windowsPath.substring(2);
+            }
+        }
+
+        // Convert backslashes to forward slashes
+        return windowsPath.replace('\\', '/');
+    }
+
     private static final int SQLITE_OPEN_READONLY = 0x00000001; /* Ok for sqlite3_open_v2() */
     private static final int SQLITE_OPEN_READWRITE = 0x00000002; /* Ok for sqlite3_open_v2() */
     private static final int SQLITE_OPEN_CREATE = 0x00000004; /* Ok for sqlite3_open_v2() */
@@ -770,8 +809,10 @@ public class WasmDB extends DB implements WasmDBImports {
             int nTimeoutLimit,
             int pagesPerStep)
             throws SQLException {
+        // Convert Windows path to POSIX-style path for in-memory filesystem
+        String posixDestFileName = convertToPosixPath(destFileName);
         int originNamePtr = lib.allocCString(dbName);
-        int destNamePtr = lib.allocCString(destFileName);
+        int destNamePtr = lib.allocCString(posixDestFileName);
         int mainStrPtr = lib.allocCString("main");
         int destDbPtr = lib.malloc(PTR_SIZE);
 
@@ -781,9 +822,11 @@ public class WasmDB extends DB implements WasmDBImports {
         }
 
         // TODO: verify why we need this dance around VFS
-        Path dest = fs.getPath(destFileName);
+        Path dest = fs.getPath(posixDestFileName);
         try {
-            Files.createDirectories(dest.getParent());
+            if (dest.getParent() != null) {
+                Files.createDirectories(dest.getParent());
+            }
         } catch (FileAlreadyExistsException e) {
             // TODO: review carefully the rest of the usage of createDirectories
             // createDirectories is failing
@@ -832,10 +875,18 @@ public class WasmDB extends DB implements WasmDBImports {
         lib.free(mainStrPtr);
 
         // and now copy the backup file from the VFS to the real disk
-        Path realDiskDest = Path.of(destFileName);
         try {
+            Path realDiskDest = Path.of(destFileName);
+            if (realDiskDest.getParent() != null) {
+                Files.createDirectories(realDiskDest.getParent());
+            }
             java.nio.file.Files.copy(dest, realDiskDest, StandardCopyOption.REPLACE_EXISTING);
             Files.deleteIfExists(dest);
+        } catch (java.nio.file.InvalidPathException e) {
+            // Handle invalid paths (e.g., paths starting with "(" on Windows)
+            throw new SQLiteException(
+                    "Invalid path: " + destFileName + " - " + e.getMessage(),
+                    SQLiteErrorCode.SQLITE_ERROR);
         } catch (IOException e) {
             throw new SQLiteException(
                     "failed to map to in-memory VFS " + e.getMessage(),
@@ -865,8 +916,10 @@ public class WasmDB extends DB implements WasmDBImports {
             int nTimeoutLimit,
             int pagesPerStep)
             throws SQLException {
+        // Convert Windows path to POSIX-style path for in-memory filesystem
+        String posixSourceFileName = convertToPosixPath(sourceFileName);
         int destNamePtr = lib.allocCString(dbName);
-        int sourceNamePtr = lib.allocCString(sourceFileName);
+        int sourceNamePtr = lib.allocCString(posixSourceFileName);
         int mainStrPtr = lib.allocCString("main");
         int sourceDbPtr = lib.malloc(PTR_SIZE);
 
@@ -876,11 +929,16 @@ public class WasmDB extends DB implements WasmDBImports {
         }
 
         // and now copy the backup file from the VFS to the real disk
-        Path realDiskSource = Path.of(sourceFileName);
-        Path source = fs.getPath(sourceFileName);
         try {
+            Path realDiskSource = Path.of(sourceFileName);
+            Path source = fs.getPath(posixSourceFileName);
             Files.createDirectories(source);
             java.nio.file.Files.copy(realDiskSource, source, StandardCopyOption.REPLACE_EXISTING);
+        } catch (java.nio.file.InvalidPathException e) {
+            // Handle invalid paths (e.g., paths starting with "(" on Windows)
+            throw new SQLiteException(
+                    "Invalid path: " + sourceFileName + " - " + e.getMessage(),
+                    SQLiteErrorCode.SQLITE_ERROR);
         } catch (IOException e) {
             throw new SQLiteException(
                     "failed to map to in-memory VFS " + e.getMessage(),

@@ -17,11 +17,32 @@ permissions:
   checks: write
 
 jobs:
-  build:
+  build-wasm:
     runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Prepare the toolchain
+      working-directory: wasm-lib
+      run: ./prepare-ci.sh
+
+    - name: Build SQLite
+      working-directory: wasm-lib
+      run: ./build.sh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: libsqlite3-wasm
+        path: wasm-lib/libsqlite3.wasm
+
+  build:
+    needs: build-wasm
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         java-version: [11] # 17, 21
 
     steps:
@@ -34,13 +55,9 @@ jobs:
         java-version: '${{ matrix.java-version }}'
         cache: maven
 
-    - name: Prepare the toolchain
-      working-directory: wasm-lib
-      run: ./prepare-ci.sh
-
-    - name: Build SQLite
-      working-directory: wasm-lib
-      run: ./build.sh
+    - uses: actions/download-artifact@v5
+      with:
+        name: libsqlite3-wasm
 
     - name: Test sqlite-jdbc-wasm
       run: mvn -B clean install

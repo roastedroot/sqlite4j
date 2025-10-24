@@ -463,10 +463,14 @@ public class ConnectionTest {
 
     @Test
     public void failsOpenDatabaseNoCreateUnavailablePath() throws Exception {
-        assertThatThrownBy(
-                        () ->
-                                DriverManager.getConnection(
-                                        String.format("jdbc:sqlite:/NON-EXISTENT9123/sample4.db")))
+        var path =
+                System.getProperty("os.name").toLowerCase().contains("win")
+                        // Use a network share that does not exist
+                        ? "\\\\NON-EXISTENT9123\\dir\\sample4.db"
+                        // this typically fails because you need root to create the dir
+                        : "/NON-EXISTENT9123/sample4.db";
+
+        assertThatThrownBy(() -> DriverManager.getConnection(String.format("jdbc:sqlite:" + path)))
                 .hasMessageContaining("Failed to create db file");
     }
 
