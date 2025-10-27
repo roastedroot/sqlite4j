@@ -55,7 +55,7 @@ jobs:
         java-version: '${{ matrix.java-version }}'
         cache: maven
 
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v6
       with:
         name: libsqlite3-wasm
 
