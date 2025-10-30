@@ -31,7 +31,7 @@ jobs:
       working-directory: wasm-lib
       run: ./build.sh
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v5
       with:
         name: libsqlite3-wasm
         path: wasm-lib/libsqlite3.wasm
