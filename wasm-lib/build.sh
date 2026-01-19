@@ -17,10 +17,10 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Download the latest SQLite amalgamation 3.48.0 as of today
 # rm -rf sqlite-amalgamation
-# wget https://www.sqlite.org/2025/sqlite-amalgamation-3510000.zip
-# unzip sqlite-amalgamation-3510000.zip
-# mv sqlite-amalgamation-3510000 sqlite-amalgamation
-# rm sqlite-amalgamation-3510000.zip
+# wget https://www.sqlite.org/2026/sqlite-amalgamation-3510200.zip
+# unzip sqlite-amalgamation-3510200.zip
+# mv sqlite-amalgamation-3510200 sqlite-amalgamation
+# rm sqlite-amalgamation-3510200.zip
 
 # Download and install Binaryen for optimizations
 # rm -rf binaryen
