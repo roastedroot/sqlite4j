@@ -193,7 +193,7 @@
                             <java>
                                 <toggleOffOn/>
                                 <googleJavaFormat>
-                                    <version>1.18.1</version>
+                                    <version>1.28.0</version>
                                     <style>AOSP</style>
                                     <reflowLongStrings>true</reflowLongStrings>
                                 </googleJavaFormat>

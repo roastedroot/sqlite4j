@@ -499,7 +499,7 @@ public class FastDateParser implements DateParser, Serializable {
                     return new CopyQuotedStrategy(
                             formatField.substring(1, formatField.length() - 1));
                 }
-                // $FALL-THROUGH$
+            // $FALL-THROUGH$
             default:
                 return new CopyQuotedStrategy(formatField);
             case 'D':
@@ -544,7 +544,7 @@ public class FastDateParser implements DateParser, Serializable {
                 if (formatField.equals("ZZ")) {
                     return ISO_8601_STRATEGY;
                 }
-                // $FALL-THROUGH$
+            // $FALL-THROUGH$
             case 'z':
                 return getLocaleSpecificStrategy(Calendar.ZONE_OFFSET, definingCalendar);
         }
