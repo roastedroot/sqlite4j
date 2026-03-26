@@ -199,7 +199,7 @@ public abstract class SQLiteConnection implements Connection {
         switch (level) {
             case java.sql.Connection.TRANSACTION_READ_COMMITTED:
             case java.sql.Connection.TRANSACTION_REPEATABLE_READ:
-                // Fall-through: Spec allows upgrading isolation to a higher level
+            // Fall-through: Spec allows upgrading isolation to a higher level
             case java.sql.Connection.TRANSACTION_SERIALIZABLE:
                 getDatabase().exec("PRAGMA read_uncommitted = false;", getAutoCommit());
                 break;
