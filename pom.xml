@@ -6,14 +6,14 @@
     <artifactId>sqlite4j</artifactId>
     <version>9.9.9.9-SNAPSHOT</version>
     <name>Pure Java SQLite JDBC Driver</name>
-    <description>SQLite JDBC library running in Wasm thanks to Chicory</description>
+    <description>SQLite JDBC library running in Wasm thanks to Endive</description>
     <url>https://github.com/roastedroot/sqlite4j</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.14.4</junit.version>
         <surefire.version>3.5.6</surefire.version>
-        <chicory.version>1.7.5</chicory.version>
+        <endive.version>1.0.0</endive.version>
     </properties>
 
     <licenses>
@@ -87,7 +87,7 @@
                     <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>com.dylibso.chicory</groupId>
+                            <groupId>run.endive</groupId>
                             <artifactId>annotations-processor</artifactId>
                         </path>
                     </annotationProcessorPaths>
@@ -151,9 +151,9 @@
             </plugin>
 
             <plugin>
-                <groupId>com.dylibso.chicory</groupId>
-                <artifactId>chicory-compiler-maven-plugin</artifactId>
-                <version>${chicory.version}</version>
+                <groupId>run.endive</groupId>
+                <artifactId>endive-compiler-maven-plugin</artifactId>
+                <version>${endive.version}</version>
                 <executions>
                 <execution>
                     <id>compile-sqlite</id>
@@ -281,9 +281,9 @@
     <dependencyManagement>
         <dependencies>
         <dependency>
-            <groupId>com.dylibso.chicory</groupId>
+            <groupId>run.endive</groupId>
             <artifactId>bom</artifactId>
-            <version>${chicory.version}</version>
+            <version>${endive.version}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -293,19 +293,19 @@
     <dependencies>
         <!-- WASM dependencies -->
         <dependency>
-            <groupId>com.dylibso.chicory</groupId>
+            <groupId>run.endive</groupId>
             <artifactId>wasm</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.dylibso.chicory</groupId>
+            <groupId>run.endive</groupId>
             <artifactId>runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.dylibso.chicory</groupId>
+            <groupId>run.endive</groupId>
             <artifactId>wasi</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.dylibso.chicory</groupId>
+            <groupId>run.endive</groupId>
             <artifactId>annotations</artifactId>
         </dependency>
 

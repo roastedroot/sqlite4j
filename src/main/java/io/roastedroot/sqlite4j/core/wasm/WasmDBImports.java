@@ -1,8 +1,8 @@
 package io.roastedroot.sqlite4j.core.wasm;
 
-import com.dylibso.chicory.runtime.HostFunction;
-import com.dylibso.chicory.wasm.types.ValueType;
 import java.util.List;
+import run.endive.runtime.HostFunction;
+import run.endive.wasm.types.ValueType;
 
 public interface WasmDBImports {
 

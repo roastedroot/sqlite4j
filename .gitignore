@@ -14,3 +14,4 @@ atlassian-ide-plugin.xml
 *.class
 .fleet/settings.json
 keys
+.claude

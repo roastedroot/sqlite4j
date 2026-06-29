@@ -3,14 +3,6 @@ package io.roastedroot.sqlite4j.core;
 import static io.roastedroot.sqlite4j.core.wasm.WasmDBExports.SQLITE_SERIALIZE_NOCOPY;
 import static io.roastedroot.sqlite4j.core.wasm.WasmDBExports.SQLITE_UTF8;
 
-import com.dylibso.chicory.runtime.ByteArrayMemory;
-import com.dylibso.chicory.runtime.ImportValues;
-import com.dylibso.chicory.runtime.Instance;
-import com.dylibso.chicory.runtime.Memory;
-import com.dylibso.chicory.wasi.WasiOptions;
-import com.dylibso.chicory.wasi.WasiPreview1;
-import com.dylibso.chicory.wasm.WasmModule;
-import com.dylibso.chicory.wasm.types.MemoryLimits;
 import io.roastedroot.sqlite4j.BusyHandler;
 import io.roastedroot.sqlite4j.Collation;
 import io.roastedroot.sqlite4j.Function;
@@ -38,6 +30,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
+import run.endive.runtime.ByteArrayMemory;
+import run.endive.runtime.ImportValues;
+import run.endive.runtime.Instance;
+import run.endive.runtime.Memory;
+import run.endive.wasi.WasiOptions;
+import run.endive.wasi.WasiPreview1;
+import run.endive.wasm.WasmModule;
+import run.endive.wasm.types.MemoryLimits;
 
 public class WasmDB extends DB implements WasmDBImports {
     public static final int PTR_SIZE = 4;

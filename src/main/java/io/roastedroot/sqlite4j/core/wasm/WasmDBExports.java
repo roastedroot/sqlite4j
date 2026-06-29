@@ -2,10 +2,10 @@ package io.roastedroot.sqlite4j.core.wasm;
 
 import static io.roastedroot.sqlite4j.core.Codes.SQLITE_NULL;
 
-import com.dylibso.chicory.runtime.ExportFunction;
-import com.dylibso.chicory.runtime.Instance;
-import com.dylibso.chicory.wasm.types.Value;
 import java.nio.charset.StandardCharsets;
+import run.endive.runtime.ExportFunction;
+import run.endive.runtime.Instance;
+import run.endive.wasm.types.Value;
 
 // Manually writing it to avoid passing through the Map lookup on every invocation
 public class WasmDBExports {
