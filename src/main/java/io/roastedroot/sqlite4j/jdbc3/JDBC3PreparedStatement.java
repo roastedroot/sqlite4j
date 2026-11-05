@@ -279,20 +279,11 @@ public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
             throw new SQLException("Error reading stream. Length should be non-negative");
         }
 
-        byte[] bytes = new byte[length];
-
         try {
-            int bytesRead;
-            int totalBytesRead = 0;
-
-            while (totalBytesRead < length) {
-                bytesRead = istream.read(bytes, totalBytesRead, length - totalBytesRead);
-                if (bytesRead == -1) {
-                    throw new IOException("End of stream has been reached");
-                }
-                totalBytesRead += bytesRead;
+            byte[] bytes = istream.readNBytes(length);
+            if (bytes.length < length) {
+                throw new IOException("End of stream has been reached");
             }
-
             return bytes;
         } catch (IOException cause) {
             SQLException exception = new SQLException("Error reading stream");
@@ -463,13 +454,14 @@ public abstract class JDBC3PreparedStatement extends CorePreparedStatement {
      */
     public void setCharacterStream(int pos, Reader reader, int length) throws SQLException {
         try {
-            // copy chars from reader to StringBuffer
-            StringBuffer sb = new StringBuffer();
+            // copy chars from reader to StringBuilder
+            StringBuilder sb = new StringBuilder();
             char[] cbuf = new char[8192];
             int cnt;
 
-            while ((cnt = reader.read(cbuf)) > 0) {
+            while ((cnt = reader.read(cbuf, 0, Math.min(length, cbuf.length))) > 0) {
                 sb.append(cbuf, 0, cnt);
+                length -= cnt;
             }
 
             // set as string

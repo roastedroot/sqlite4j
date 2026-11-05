@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
 import java.io.ByteArrayInputStream;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -173,6 +174,60 @@ public class PrepStmtTest {
         assertThat(prep.getUpdateCount()).isEqualTo(-1);
         assertThat(rs.next()).isTrue();
         assertThat(name).isEqualTo(rs.getString(1));
+        assertThat(rs.next()).isFalse();
+        rs.close();
+    }
+
+    @Test
+    public void clobRS() throws SQLException {
+        String name = "Gandhi";
+        PreparedStatement prep = conn.prepareStatement("select ?;");
+        prep.setClob(1, new StringReader(name));
+        ResultSet rs = prep.executeQuery();
+        assertThat(prep.getUpdateCount()).isEqualTo(-1);
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getString(1)).isEqualTo(name);
+        assertThat(rs.next()).isFalse();
+        rs.close();
+    }
+
+    @Test
+    public void blobRS() throws SQLException {
+        String name = "Gandhi";
+        PreparedStatement prep = conn.prepareStatement("select ?;");
+        prep.setBlob(1, new ByteArrayInputStream(name.getBytes(StandardCharsets.UTF_8)));
+        ResultSet rs = prep.executeQuery();
+        assertThat(prep.getUpdateCount()).isEqualTo(-1);
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getBytes(1)).isEqualTo(name.getBytes(StandardCharsets.UTF_8));
+        assertThat(rs.next()).isFalse();
+        rs.close();
+    }
+
+    @Test
+    public void characterAndBinaryStreamRS() throws SQLException {
+        String text = "Stream content";
+        PreparedStatement prep = conn.prepareStatement("select ?, ?;");
+        prep.setCharacterStream(1, new StringReader(text));
+        prep.setBinaryStream(2, new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)));
+        ResultSet rs = prep.executeQuery();
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getString(1)).isEqualTo(text);
+        assertThat(rs.getBytes(2)).isEqualTo(text.getBytes(StandardCharsets.UTF_8));
+        assertThat(rs.next()).isFalse();
+        rs.close();
+    }
+
+    @Test
+    public void nstringAndNClobRS() throws SQLException {
+        String text = "Unicode text \u00e9\u00e8\u00e0";
+        PreparedStatement prep = conn.prepareStatement("select ?, ?;");
+        prep.setNString(1, text);
+        prep.setNClob(2, new StringReader(text));
+        ResultSet rs = prep.executeQuery();
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getString(1)).isEqualTo(text);
+        assertThat(rs.getString(2)).isEqualTo(text);
         assertThat(rs.next()).isFalse();
         rs.close();
     }
