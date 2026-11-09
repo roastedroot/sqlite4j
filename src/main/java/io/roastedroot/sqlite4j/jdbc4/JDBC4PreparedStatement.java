@@ -27,7 +27,8 @@ public class JDBC4PreparedStatement extends JDBC3PreparedStatement
         super(conn, sql);
     }
 
-    private static int requireLengthIsPositiveInt(long length) throws SQLFeatureNotSupportedException {
+    private static int requireLengthIsPositiveInt(long length)
+            throws SQLFeatureNotSupportedException {
         if (length > Integer.MAX_VALUE || length < 0) {
             throw new SQLFeatureNotSupportedException(
                     "Data must have a length between 0 and Integer.MAX_VALUE");

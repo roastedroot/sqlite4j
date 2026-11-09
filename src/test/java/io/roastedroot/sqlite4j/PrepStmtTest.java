@@ -205,6 +205,19 @@ public class PrepStmtTest {
     }
 
     @Test
+    public void nullStreamsRS() throws SQLException {
+        PreparedStatement prep = conn.prepareStatement("select ?, ?;");
+        prep.setBinaryStream(1, null, 0);
+        prep.setAsciiStream(2, null, 0);
+        ResultSet rs = prep.executeQuery();
+        assertThat(rs.next()).isTrue();
+        assertThat(rs.getBytes(1)).isNull();
+        assertThat(rs.getString(2)).isNull();
+        assertThat(rs.next()).isFalse();
+        rs.close();
+    }
+
+    @Test
     public void characterAndBinaryStreamRS() throws SQLException {
         String text = "Stream content";
         PreparedStatement prep = conn.prepareStatement("select ?, ?;");
