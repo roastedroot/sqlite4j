@@ -867,6 +867,15 @@ public class WasmDB extends DB implements WasmDBImports {
 
             lib.backupFinish(pBackup);
             rc = lib.extendedErrorcode(lib.ptr(destDbPtr));
+            // sqlite3_backup_finish does NOT close the destination handle. Leaving it
+            // open keeps the destination file open in the VFS, so the
+            // Files.deleteIfExists below never reclaims its content blocks — every
+            // backup call retains a full database image in memory until the whole
+            // file system is closed.
+            int closeRc = lib.close(lib.ptr(destDbPtr));
+            if (rc == SQLITE_OK) {
+                rc = closeRc;
+            }
         }
 
         lib.free(originNamePtr);
@@ -969,10 +978,16 @@ public class WasmDB extends DB implements WasmDBImports {
 
             lib.backupFinish(pBackup);
             rc = lib.extendedErrorcode(lib.ptr(sourceDbPtr));
+            // same as backup(): sqlite3_backup_finish does not close the source
+            // handle, and an open handle keeps the in-VFS source file alive
+            int closeRc = lib.close(lib.ptr(sourceDbPtr));
+            if (rc == SQLITE_OK) {
+                rc = closeRc;
+            }
         }
 
         lib.free(destNamePtr);
-        lib.free(destNamePtr);
+        lib.free(sourceNamePtr);
         lib.free(sourceDbPtr);
         lib.free(mainStrPtr);
 
