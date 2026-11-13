@@ -867,6 +867,11 @@ public class WasmDB extends DB implements WasmDBImports {
 
             lib.backupFinish(pBackup);
             rc = lib.extendedErrorcode(lib.ptr(destDbPtr));
+            // backup_finish doesn't close the handle; left open, the VFS file is never reclaimed
+            int closeRc = lib.close(lib.ptr(destDbPtr));
+            if (rc == SQLITE_OK) {
+                rc = closeRc;
+            }
         }
 
         lib.free(originNamePtr);
@@ -969,10 +974,15 @@ public class WasmDB extends DB implements WasmDBImports {
 
             lib.backupFinish(pBackup);
             rc = lib.extendedErrorcode(lib.ptr(sourceDbPtr));
+            // backup_finish doesn't close the source handle
+            int closeRc = lib.close(lib.ptr(sourceDbPtr));
+            if (rc == SQLITE_OK) {
+                rc = closeRc;
+            }
         }
 
         lib.free(destNamePtr);
-        lib.free(destNamePtr);
+        lib.free(sourceNamePtr);
         lib.free(sourceDbPtr);
         lib.free(mainStrPtr);
 
